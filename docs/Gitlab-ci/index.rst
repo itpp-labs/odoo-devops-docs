@@ -1,11 +1,9 @@
-Odoo DevOps
+GitLab CI/CD
 =======================================
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   first-steps
-   Docker/index
-   Kubernetes/index
-   Gitlab-ci/index
+   Gitlab - Kubernetes integration
+   Gitlab runner
