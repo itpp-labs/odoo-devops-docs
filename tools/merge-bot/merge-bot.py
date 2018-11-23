@@ -146,9 +146,6 @@ def main():
         from_branch = '10.0'
         in_branch = '11.0'
 
-    origin = 'git@github.com:' + fork_account + '/' + repo_name + '.git'
-    upstream = 'git@github.com:' + from_account + '/' + repo_name + '.git'
-
     origin = 'git@github.com:' + from_account + '/' + repo_name + '.git'
     fork = 'git@github.com:' + fork_account + '/' + repo_name + '.git'
 
@@ -160,7 +157,7 @@ def main():
         branch_delete(new_branch_name)
     else:
         clone_repo(origin)
-        cd_in_repo()
+        cd_in_repo(repo_name)
         add_remote('fork', fork)
         new_branch_name = in_branch + '-' + get_last_commit_on_branch('origin/' + from_branch)
 
@@ -184,13 +181,33 @@ def main():
 
         conflict_files = merge('origin/' + in_branch)
 
-        for file_name in conflict_files:
-            if '__manifest__.py' in file_name or '__openerp__.py' in file_name:
-                conflicts, conflict_lines = find_conflicts(file_name)
-                if len(conflict_lines) == 1:
-                    if '"version"' in conflicts[0][0] and '"version"' in conflicts[0][1]:
-                        solve_conflict(file_name, conflict_lines[0], solve_version(conflicts[0][0], conflicts[0][1]))
+        #for file_name in conflict_files:
+        #    print(file_name)
+        #    if '__manifest__.py' in file_name or '__openerp__.py' in file_name:
+        #        if file_name.replace('__manifest__.py', '').replace('__openerp__.py', '') + 'doc/changelog.rst' not in conflict_files:
+        #            conflicts, conflict_lines = find_conflicts(file_name)
+        #            if len(conflict_lines) == 1:
+        #                if '"version"' in conflicts[0][0] and '"version"' in conflicts[0][1]:
+        #                    solve_conflict(file_name, conflict_lines[0], solve_version(conflicts[0][0], conflicts[0][1]))
 
+        solution_files = []
+        solutions = []
+        solution_lines = []
+        for file_name in conflict_files:
+            print(file_name)
+            if '__manifest__.py' in file_name or '__openerp__.py' in file_name:
+                if file_name.replace('__manifest__.py', '').replace('__openerp__.py', '') + 'doc/changelog.rst' not in conflict_files:
+                    conflicts, conflict_lines = find_conflicts(file_name)
+                    if len(conflict_lines) == 1:
+                        if '"version"' in conflicts[0][0] and '"version"' in conflicts[0][1]:
+                            solution_files.append(file_name)
+                            solutions.append(solve_version(conflicts[0][0], conflicts[0][1]))
+                            solution_lines.append(conflict_lines[0])
+
+        abort_merge()
+
+        for i in range(len(solutions)):
+            solve_conflict(solution_files[i], solution_lines[i], solutions[i])
 
     #call(['git', 'status'])
 
