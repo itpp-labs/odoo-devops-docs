@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import argparse
 import sys
 import requests
 from github import Github
@@ -9,9 +10,19 @@ def main():
     if not len(sys.argv) == 5:
         print('Enter Github login, Github password, repository and PR number')
     else:
-        github = Github(sys.argv[1], sys.argv[2])
-        repo_name = sys.argv[3]
-        pr_number = sys.argv[4]
+
+        parser = argparse.ArgumentParser()
+        parser.add_argument("github_login", help="Login from github account")
+        parser.add_argument("github_password", help="Password from github account")
+        parser.add_argument("repo_name", help="Name of repository where merge will be made")
+        parser.add_argument("pr_number", help="Number of PR in which review will be made")
+        args = parser.parse_args()
+        github_login = args.github_login
+        github_password = args.github_password
+        repo_name = args.repo_name
+        pr_number = args.pr_number
+
+        github = Github(github_login, github_password)
 
         repo = github.get_repo(repo_name)
         pr = repo.get_pull(int(pr_number))
