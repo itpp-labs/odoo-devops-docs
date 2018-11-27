@@ -8,14 +8,14 @@ Currently they creating a new branch that is ready to merge in branch you choose
 To use scripts you need to:
 
 * Download scripts:
-	
-	git clone git@gitlab.com:itpp/odoo-devops.git 
+
+      git clone git@gitlab.com:itpp/odoo-devops.git 
 
 * Go inside merge-bot folder.
 
 * Run merge-bot.py with 5 arguments:
 
-	merge-bot.py <repo_name> <from_account> <fork_account> <from_branch> <in_branch>
+      merge-bot.py <repo_name> <from_account> <fork_account> <from_branch> <in_branch>
 
 Where arguments are:
 
