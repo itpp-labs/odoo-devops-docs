@@ -8,10 +8,10 @@ import argparse
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("repo_name", help="Name of repository where merge will be made")
-    parser.add_argument("from_account", help="Account where repository is located")
-    parser.add_argument("fork_account", help="Account where the fork is located in which the branch will be created")
-    parser.add_argument("from_branch", help="Name of branch from which merge will be made")
-    parser.add_argument("in_branch", help="Name of branch in which merge will be made")
+    parser.add_argument("from_account", help="Account where repository, in witch PR will be made, is located")
+    parser.add_argument("fork_account", help="Account where repository, in which branch will be created, is located")
+    parser.add_argument("from_branch", help="Name of branch, from which merge will be made")
+    parser.add_argument("in_branch", help="Name of branch, in which merge will be made")
     args = parser.parse_args()
     repo_name = args.repo_name
     from_account = args.from_account
