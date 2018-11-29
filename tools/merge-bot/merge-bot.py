@@ -7,52 +7,44 @@ import argparse
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("repo_name", help="Name of repository where merge will be made")
-    parser.add_argument("from_account", help="Account where repository, in witch PR will be made, is located")
-    parser.add_argument("fork_account", help="Account where repository, in which branch will be created, is located")
+    parser.add_argument("--upstream_remote", help="Remote where repository, in witch PR will be made, is located", default='upstream')
+    parser.add_argument("--origin_remote", help="Remote where repository, in which branch will be created, is located", default='origin')
     parser.add_argument("from_branch", help="Name of branch, from which merge will be made")
     parser.add_argument("in_branch", help="Name of branch, in which merge will be made")
     args = parser.parse_args()
-    repo_name = args.repo_name
-    from_account = args.from_account
-    fork_account = args.fork_account
+    upstream_remote = args.upstream_remote
+    origin_remote = args.origin_remote
     from_branch = args.from_branch
     in_branch = args.in_branch
 
-    origin = 'git@github.com:' + from_account + '/' + repo_name + '.git'
-    fork = 'git@github.com:' + fork_account + '/' + repo_name + '.git'
+    #repo_name = get_repo_name()
+    #upstream = 'git@github.com:' + upstream_account + '/' + repo_name + '.git'
+    #origin = 'git@github.com:' + origin_account + '/' + repo_name + '.git'
 
-    if os.path.exists(repo_name):
-        cd_in_repo(repo_name)
-        abort_merge()
-        new_branch_name = in_branch + '-' + get_last_commit_on_branch('origin/' + from_branch)
-        fetch('origin')
-        branch_delete(new_branch_name)
-    else:
-        clone_repo(origin)
-        cd_in_repo(repo_name)
-        add_remote('fork', fork)
-        new_branch_name = in_branch + '-' + get_last_commit_on_branch('origin/' + from_branch)
+    fetch(upstream_remote)
+    call(['git', 'checkout', upstream_remote + '/' + in_branch])
 
+    new_branch_name = in_branch + '-' + get_last_commit_on_branch(upstream_remote + '/' + from_branch)
     print(new_branch_name)
+    if branch_exists(new_branch_name):
+        abort_merge()
+        branch_delete(new_branch_name)
 
-    call(['git', 'checkout', 'origin/' + in_branch])
     call(['git', 'checkout', '-b', new_branch_name])
 
-    conflict_files = merge('origin/' + from_branch)
-    print(conflict_files)
+    conflict_files = merge(upstream_remote + '/' + from_branch)
     print(len(conflict_files))
     if len(conflict_files) > 0:
         commits = get_commits()
         for commit in commits:
             abort_merge()
             reset_to_commit(commit)
-            conflict_files = merge('origin/' + from_branch)
+            conflict_files = merge(upstream_remote + '/' + from_branch)
             print(commit, len(conflict_files))
             if len(conflict_files) == 0:
                 break
 
-        conflict_files = merge('origin/' + in_branch)
+        conflict_files = merge(upstream_remote + '/' + in_branch)
 
         #for file_name in conflict_files:
         #    print(file_name)
@@ -79,14 +71,24 @@ def main():
 
         abort_merge()
 
-        for i in range(len(solutions)):
-            solve_conflict(solution_files[i], solution_lines[i], solutions[i])
+        #for i in range(len(solutions)):
+        #    solve_conflict(solution_files[i], solution_lines[i], solutions[i])
 
     #call(['git', 'status'])
 
 
 def clone_repo(url):
     call(['git', 'clone', url])
+
+
+def get_repo_name():
+    proc = Popen(['basename', "'git rev-parse --show-toplevel'"], stdout=PIPE, stderr=PIPE)
+    return proc.communicate()[0]
+
+
+def get_remote_name(name):
+    proc = Popen(['git', 'remote' 'get-url', name], stdout=PIPE, stderr=PIPE)
+    return proc.communicate().split(':')[-1].split('/')[0]
 
 
 def cd_in_repo(repo_name):
@@ -106,8 +108,12 @@ def pull(remote):
 
 
 def branch_exists(branch_name):
-    proc = Popen(['git', 'branch', '--list ', branch_name], stdout=PIPE, stderr=PIPE)
-    return proc.communicate()[0].decode("utf-8") != ''
+    #print('git', 'branch', '--list', branch_name)
+    proc = Popen(['git', 'branch', '--list', branch_name], stdout=PIPE, stderr=PIPE)
+    str = proc.communicate()[0].decode("utf-8")
+    print(str)
+    print('Branch exist' if str else 'Branch does not exist')
+    return True if str else False
 
 
 def branch_delete(branch_name):
