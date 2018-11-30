@@ -29,7 +29,7 @@ def main():
     #print(commit)
     installable_modules = []
     for file in pr.get_files():
-        if '__manifest__.py' in file.filename or '__openerp__.py' in file.filename:
+        if '__manifest__.py' in file.filename:
             html = requests.get(file.raw_url, auth=('user', 'pass')).text
             #print(file.filename.split('/')[0], file.raw_url)
             if "'installable': True" in html or '"installable": True' in html:

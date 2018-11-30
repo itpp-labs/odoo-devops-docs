@@ -11,11 +11,18 @@ def main():
     parser.add_argument("--origin_remote", help="Remote where repository, in which branch will be created, is located", default='origin')
     parser.add_argument("from_branch", help="Name of branch, from which merge will be made")
     parser.add_argument("in_branch", help="Name of branch, in which merge will be made")
+
+    parser.add_argument("github_login", help="Login from github account")
+    parser.add_argument("github_password", help="Password from github account")
+
     args = parser.parse_args()
     upstream_remote = args.upstream_remote
     origin_remote = args.origin_remote
     from_branch = args.from_branch
     in_branch = args.in_branch
+
+    github_login = args.github_login
+    github_password = args.github_passwor
 
     #repo_name = get_repo_name()
     #upstream = 'git@github.com:' + upstream_account + '/' + repo_name + '.git'
@@ -48,8 +55,8 @@ def main():
 
         #for file_name in conflict_files:
         #    print(file_name)
-        #    if '__manifest__.py' in file_name or '__openerp__.py' in file_name:
-        #        if file_name.replace('__manifest__.py', '').replace('__openerp__.py', '') + 'doc/changelog.rst' not in conflict_files:
+        #    if '__manifest__.py' in file_name:
+        #        if file_name.replace('__manifest__.py', '') + 'doc/changelog.rst' not in conflict_files:
         #            conflicts, conflict_lines = find_conflicts(file_name)
         #            if len(conflict_lines) == 1:
         #                if '"version"' in conflicts[0][0] and '"version"' in conflicts[0][1]:
@@ -60,8 +67,8 @@ def main():
         solution_lines = []
         for file_name in conflict_files:
             print(file_name)
-            if '__manifest__.py' in file_name or '__openerp__.py' in file_name:
-                if file_name.replace('__manifest__.py', '').replace('__openerp__.py', '') + 'doc/changelog.rst' not in conflict_files:
+            if '__manifest__.py' in file_name:
+                if file_name.replace('__manifest__.py', '') + 'doc/changelog.rst' not in conflict_files:
                     conflicts, conflict_lines = find_conflicts(file_name)
                     if len(conflict_lines) == 1:
                         if '"version"' in conflicts[0][0] and '"version"' in conflicts[0][1]:
@@ -89,10 +96,6 @@ def get_repo_name():
 def get_remote_name(name):
     proc = Popen(['git', 'remote' 'get-url', name], stdout=PIPE, stderr=PIPE)
     return proc.communicate().split(':')[-1].split('/')[0]
-
-
-def cd_in_repo(repo_name):
-    os.chdir(os.getcwd() + '/' + repo_name)
 
 
 def add_remote(name, remote):
@@ -215,6 +218,12 @@ def solve_conflict(file_name, conflict_lines, solution):
         file.writelines(data)
 
     print(file_name, 'conflict solved')
+
+
+def make_pr(github_login, github_password, remote):
+    from github import Github
+    github = Github(github_login, github_password)
+    repo = github.get_repo("PyGithub/PyGithub")
 
 
 if __name__ == "__main__":
