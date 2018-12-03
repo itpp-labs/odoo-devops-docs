@@ -190,7 +190,7 @@ def solve_conflict(file_name, conflict_lines, solution):
         data = file.readlines()
         del data[conflict_lines[0]: conflict_lines[-1] + 1]
         for i in range(len(solution_lines)):
-            data.insert(conflict_lines[0] + i, solution_lines[i])
+            data.insert(conflict_lines[0] + i, solution_lines[i] + '\n')
 
     with open(file_name, 'w') as file:
         file.writelines(data)
