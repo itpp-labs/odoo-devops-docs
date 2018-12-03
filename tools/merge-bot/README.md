@@ -1,7 +1,7 @@
 Merge bot for transfering changes between odoo versions 
 =======================================================
 
-This is scripts for automaticly merging branches with modules, which have different odoo versions. This allow to transfer module changes between versions more easier and with the lowest possible human participation.
+This is scripts for automatically merging branches with modules, which have different odoo versions. This allow to transfer module changes between versions more easier and with the lowest possible human participation.
 
 Currently they creating a new branch that is ready to merge in branch you choosed. 
 

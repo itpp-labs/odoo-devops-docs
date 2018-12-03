@@ -9,8 +9,10 @@ VERSION_EMOJIS = {'8.0': ':eight:', '9.0': ':nine:', '10.0': ':one::zero:', '11.
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--upstream_remote", help="Remote where repository, in witch PR will be made, is located", default='upstream')
-    parser.add_argument("--origin_remote", help="Remote where repository, in which branch will be created, is located", default='origin')
+    parser.add_argument("--upstream_remote", help="Remote where repository, in witch PR will be made, is located",
+                        default='upstream')
+    parser.add_argument("--origin_remote", help="Remote where repository, in which branch will be created, is located",
+                        default='origin')
     parser.add_argument("from_branch", help="Name of branch, from which merge will be made")
     parser.add_argument("in_branch", help="Name of branch, in which merge will be made")
 
@@ -45,10 +47,10 @@ def main():
 
         conflict_files = merge(upstream_remote + '/' + in_branch)
 
-        '''solution_files = []
+        solution_files = []
         solutions = []
         solution_lines = []
-        for file_name in conflict_files:    
+        for file_name in conflict_files:
             print(file_name)
             if '__manifest__.py' in file_name:
                 if file_name.replace('__manifest__.py', '') + 'doc/changelog.rst' not in conflict_files:
@@ -64,7 +66,8 @@ def main():
         for i in range(len(solutions)):
             solve_conflict(solution_files[i], solution_lines[i], solutions[i])
 
-        commit_all(':peace_symbol:' + VERSION_EMOJIS[in_branch] + 'some conflicts are solved')'''
+        commit_all(':peace_symbol:' + VERSION_EMOJIS[in_branch] + ' some version conflicts in manifests are '
+                                                                  'automatically resolved')
 
 
 def clone_repo(url):
@@ -200,13 +203,12 @@ def solve_conflict(file_name, conflict_lines, solution):
     solution_lines = solution.split('\n')[0:-1]
     with open(file_name, 'r') as file:
         data = file.readlines()
-        del data[conflict_lines[0]: conflict_lines[-1] + 1]
+        del data[conflict_lines[0]: conflict_lines[1] - 1]
         for i in range(len(solution_lines)):
             data.insert(conflict_lines[0] + i, solution_lines[i] + '\n')
 
     with open(file_name, 'w') as file:
         file.writelines(data)
-
 
     print(file_name, 'conflict solved')
 
