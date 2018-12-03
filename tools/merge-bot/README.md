@@ -14,14 +14,18 @@ To use scripts you need to:
 
 * Download scripts:
 
-      git clone git@gitlab.com:itpp/odoo-devops.git 
+      $ git clone git@gitlab.com:itpp/odoo-devops.git 
 
 * Copy file merge-bot.py from tools/merge-bot folder in your repository folder with odoo modules
 
 * Run merge-bot.py with 2 arguments:
 
-      python merge-bot.py <from_branch> <in_branch>
+      $ python merge-bot.py <from_branch> <in_branch>
 
+* Push branch in your repository:
+
+      $ git push origin
+      
 Where positional arguments are:
 * from_branch - Name of branch, from which merge will be made
 * in_branch - Name of branch, in which merge will be made
@@ -29,3 +33,25 @@ Where positional arguments are:
 And two optional ones for setting up alternative names for remotes:
 --upstream_remote - will be used as name for "upstream" remote. Default value is "upstream".
 --origin_remote ORIGIN_REMOTE - will be used as name for "origin" remote. Default value is "origin".
+
+
+Merge example of pos-addons from 11.0 to 12.0:
+
+* Checking if needed remotes are in place:
+
+      $ git remote -v
+
+      origin	git@github.com:Rusllan/pos-addons.git (fetch)
+      origin	git@github.com:Rusllan/pos-addons.git (push)
+      upstream	git@github.com:it-projects-llc/pos-addons.git (fetch)
+      upstream	git@github.com:it-projects-llc/pos-addons.git (push)
+
+* Running the script: 
+
+      $ python merge-bot.py 11.0 12.0
+      
+* Push changes to origin repo:
+
+      $ git push origin
+      
+Result of this merge you can see in PR: https://github.com/it-projects-llc/misc-addons/pull/682 
