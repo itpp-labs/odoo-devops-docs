@@ -16,11 +16,17 @@ To use scripts you need to:
 
       $ git clone git@gitlab.com:itpp/odoo-devops.git 
 
-* Copy file merge-bot.py from tools/merge-bot folder in your repository folder with odoo modules
+* Give script required permissions: 
+
+      sudo chmod +x odoo-devops/tools/merge-bot/merge-bot.py
+      
+* Create a symbolic link to script:
+
+      sudo ln -s $(pwd)/odoo-devops/tools/merge-bot/merge-bot.py /usr/local/bin
 
 * Run merge-bot.py with 2 arguments:
 
-      $ python merge-bot.py <from_branch> <in_branch>
+      $ merge-bot.py <from_branch> <in_branch>
 
 * Push branch in your repository:
 
@@ -48,7 +54,7 @@ Merge example of pos-addons from 11.0 to 12.0:
 
 * Running the script: 
 
-      $ python merge-bot.py 11.0 12.0
+      $ merge-bot.py 11.0 12.0
       
 * Push changes to origin repo:
 
