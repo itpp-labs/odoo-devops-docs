@@ -12,21 +12,11 @@ def main():
     parser.add_argument("from_branch", help="Name of branch, from which merge will be made")
     parser.add_argument("in_branch", help="Name of branch, in which merge will be made")
 
-    parser.add_argument("github_login", help="Login from github account")
-    parser.add_argument("github_password", help="Password from github account")
-
     args = parser.parse_args()
     upstream_remote = args.upstream_remote
     origin_remote = args.origin_remote
     from_branch = args.from_branch
     in_branch = args.in_branch
-
-    github_login = args.github_login
-    github_password = args.github_passwor
-
-    #repo_name = get_repo_name()
-    #upstream = 'git@github.com:' + upstream_account + '/' + repo_name + '.git'
-    #origin = 'git@github.com:' + origin_account + '/' + repo_name + '.git'
 
     fetch(upstream_remote)
     call(['git', 'checkout', upstream_remote + '/' + in_branch])
@@ -53,15 +43,6 @@ def main():
 
         conflict_files = merge(upstream_remote + '/' + in_branch)
 
-        #for file_name in conflict_files:
-        #    print(file_name)
-        #    if '__manifest__.py' in file_name:
-        #        if file_name.replace('__manifest__.py', '') + 'doc/changelog.rst' not in conflict_files:
-        #            conflicts, conflict_lines = find_conflicts(file_name)
-        #            if len(conflict_lines) == 1:
-        #                if '"version"' in conflicts[0][0] and '"version"' in conflicts[0][1]:
-        #                    solve_conflict(file_name, conflict_lines[0], solve_version(conflicts[0][0], conflicts[0][1]))
-
         solution_files = []
         solutions = []
         solution_lines = []
@@ -78,10 +59,8 @@ def main():
 
         abort_merge()
 
-        #for i in range(len(solutions)):
-        #    solve_conflict(solution_files[i], solution_lines[i], solutions[i])
-
-    #call(['git', 'status'])
+        for i in range(len(solutions)):
+            solve_conflict(solution_files[i], solution_lines[i], solutions[i])
 
 
 def clone_repo(url):
@@ -111,7 +90,6 @@ def pull(remote):
 
 
 def branch_exists(branch_name):
-    #print('git', 'branch', '--list', branch_name)
     proc = Popen(['git', 'branch', '--list', branch_name], stdout=PIPE, stderr=PIPE)
     str = proc.communicate()[0].decode("utf-8")
     print(str)
@@ -218,12 +196,6 @@ def solve_conflict(file_name, conflict_lines, solution):
         file.writelines(data)
 
     print(file_name, 'conflict solved')
-
-
-def make_pr(github_login, github_password, remote):
-    from github import Github
-    github = Github(github_login, github_password)
-    repo = github.get_repo("PyGithub/PyGithub")
 
 
 if __name__ == "__main__":
