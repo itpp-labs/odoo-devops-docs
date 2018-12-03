@@ -4,6 +4,8 @@ import sys
 from subprocess import Popen, PIPE, call
 import argparse
 
+VERSION_EMOJIS = {'8.0': ':eight:', '9.0': ':nine:', '10.0': ':one::zero:', '11.0': ':one::one:', '12.0': ':one::two:'}
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -43,10 +45,10 @@ def main():
 
         conflict_files = merge(upstream_remote + '/' + in_branch)
 
-        solution_files = []
+        '''solution_files = []
         solutions = []
         solution_lines = []
-        for file_name in conflict_files:
+        for file_name in conflict_files:    
             print(file_name)
             if '__manifest__.py' in file_name:
                 if file_name.replace('__manifest__.py', '') + 'doc/changelog.rst' not in conflict_files:
@@ -61,6 +63,8 @@ def main():
 
         for i in range(len(solutions)):
             solve_conflict(solution_files[i], solution_lines[i], solutions[i])
+
+        commit_all(':peace_symbol:' + VERSION_EMOJIS[in_branch] + 'some conflicts are solved')'''
 
 
 def clone_repo(url):
@@ -87,6 +91,14 @@ def fetch(remote):
 
 def pull(remote):
     call(['git', 'pull', remote])
+
+
+def commit_file(file_name, message):
+    call(['git', 'commit', file_name, '-m', message])
+
+
+def commit_all(message):
+    call(['git', 'commit', '-a', '-m', message])
 
 
 def branch_exists(branch_name):
@@ -194,6 +206,7 @@ def solve_conflict(file_name, conflict_lines, solution):
 
     with open(file_name, 'w') as file:
         file.writelines(data)
+
 
     print(file_name, 'conflict solved')
 
