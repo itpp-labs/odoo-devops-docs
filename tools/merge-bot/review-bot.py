@@ -55,7 +55,7 @@ def main():
             #print(comment_line)
 
     pr.create_review(commit=pr.get_commits()[pr.get_commits().totalCount-1],
-                     body='Someone features needs to be tested'
+                     body='Some features needs to be tested'
                      , event='COMMENT', comments=review_comments)
 
 
