@@ -38,8 +38,8 @@ Where positional arguments are:
 
 And two optional ones for setting up alternative names for remotes:
 --upstream_remote - will be used as name for "upstream" remote. Default value is "upstream".
---origin_remote ORIGIN_REMOTE - will be used as name for "origin" remote. Default value is "origin".
-
+--origin_remote - will be used as name for "origin" remote. Default value is "origin".
+--auto_resolve - option for making some automatic resolving.
 
 Merge example of pos-addons from 11.0 to 12.0:
 
