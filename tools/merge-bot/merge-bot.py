@@ -13,12 +13,15 @@ def main():
                         default='upstream')
     parser.add_argument("--origin_remote", help="Remote where repository, in which branch will be created, is located",
                         default='origin')
+    parser.add_argument('--auto_resolve', help="option for making some automatic resolving",
+                        dest='auto_resolve', action='store_true')
     parser.add_argument("from_branch", help="Name of branch, from which merge will be made")
     parser.add_argument("in_branch", help="Name of branch, in which merge will be made")
 
     args = parser.parse_args()
     upstream_remote = args.upstream_remote
     origin_remote = args.origin_remote
+    auto_resolve = args.auto_resolve
     from_branch = args.from_branch
     in_branch = args.in_branch
 
@@ -45,29 +48,19 @@ def main():
             if len(conflict_files) == 0:
                 break
 
-        conflict_files = merge(upstream_remote + '/' + in_branch)
+        merge(upstream_remote + '/' + in_branch)
 
-        solution_files = []
-        solutions = []
-        solution_lines = []
-        for file_name in conflict_files:
-            print(file_name)
-            if '__manifest__.py' in file_name:
-                if file_name.replace('__manifest__.py', '') + 'doc/changelog.rst' not in conflict_files:
-                    conflicts, conflict_lines = find_conflicts(file_name)
-                    if len(conflict_lines) == 1:
-                        if '"version"' in conflicts[0][0] and '"version"' in conflicts[0][1]:
-                            solution_files.append(file_name)
-                            solutions.append(solve_version(conflicts[0][0], conflicts[0][1]))
-                            solution_lines.append(conflict_lines[0])
+        if auto_resolve:
+            conflicts = find_resolvable_conflicts()
+            abort_merge()
 
-        abort_merge()
+            for conflict in conflicts:
+                solve_conflict(conflict)
 
-        for i in range(len(solutions)):
-            solve_conflict(solution_files[i], solution_lines[i], solutions[i])
-
-        commit_all(':peace_symbol:' + VERSION_EMOJIS[in_branch] + ' some version conflicts in manifests are '
-                                                                  'automatically resolved')
+            commit_all(':peace_symbol:' + VERSION_EMOJIS[in_branch] + ' some version conflicts in manifests are'
+                                                                      ' automatically resolved')
+        else:
+            abort_merge()
 
 
 def clone_repo(url):
@@ -84,16 +77,8 @@ def get_remote_name(name):
     return proc.communicate().split(':')[-1].split('/')[0]
 
 
-def add_remote(name, remote):
-    call(['git', 'remote', 'add', name, remote])
-
-
 def fetch(remote):
     call(['git', 'fetch', remote])
-
-
-def pull(remote):
-    call(['git', 'pull', remote])
 
 
 def commit_file(file_name, message):
@@ -123,6 +108,11 @@ def merge(branch):
     return proc.communicate()[0].decode("utf-8").split('\n')[:-1]
 
 
+def diff():
+    proc = Popen(['git', 'diff'], stdout=PIPE, stderr=PIPE)
+    return proc.communicate()[0]
+
+
 def abort_merge():
     with open(os.devnull, 'w') as devnull:
         call(['git', 'merge', '--abort'], stdout=devnull)
@@ -143,31 +133,61 @@ def reset_to_commit(commit):
         call(['git', 'reset', '--hard', commit], stdout=devnull)
 
 
-def find_conflicts(file_name):
-    with open(file_name) as file:
-        i = 0
-        conflict_lines = []
-        conflicts = []
-        conflict_found = False
-        for line in file:
+def find_resolvable_conflicts():
+    conflicts = []
+    file_names = []
+    conflict_file = ''
+    file_found = False
+    conflict_found = False
+    lines = diff().split('\n')
+    line_num = 0
+    conflict_line = 0
+    while line_num < len(lines):
+        if lines[line_num].startswith('diff --cc '):
+            file_names.append(lines[line_num][10:])
+            if lines[line_num].endswith('__manifest__.py'):
+                conflict_file = file_names[-1]
+                file_found = True
+
+                while not lines[line_num].startswith('@@@ '):
+                    line_num += 1
+                begin = lines[line_num].split(' ')[1].split(',')[0][1:]
+                conflict_line = int(begin) - 1
+            else:
+                file_found = False
+        elif file_found:
+
             if not conflict_found:
-                if '<<<<<<< ' in line:
-                    conflict_lines.append([0, 0, 0, 0])
-                    conflicts.append([''])
-                    conflict_lines[-1][0] = i
+                if lines[line_num].startswith('++<<<<<<< '):
+                    conflicts.append({'file': conflict_file, 'body1': '', 'body2': '', 'lines': [], 'solution': ''})
+                    conflicts[-1]['lines'].append(conflict_line)
                     conflict_found = True
             else:
-                if '=======\n' in line:
-                    conflict_lines[-1][1] = i
-                    conflict_lines[-1][2] = i
-                    conflicts[-1].append('')
-                elif '>>>>>>> ' in line:
+                if lines[line_num].startswith('++======='):
+                    conflicts[-1]['lines'].append(conflict_line)
+                elif lines[line_num].startswith('++>>>>>>> '):
+                    conflicts[-1]['lines'].append(conflict_line)
                     conflict_found = False
-                    conflict_lines[-1][3] = i
                 else:
-                    conflicts[-1][-1] += line
-            i += 1
-    return conflicts, conflict_lines
+                    if len(conflicts[-1]['lines']) == 1:
+                        conflicts[-1]['body1'] += lines[line_num][2:] + '\n'
+                    else:
+                        conflicts[-1]['body2'] += lines[line_num][2:] + '\n'
+            conflict_line += 1
+        line_num += 1
+
+    for conflict in conflicts[:]:
+        if conflict['file'].endswith('__manifest__.py'):
+            if conflict['file'].replace('__manifest__.py', 'doc/changelog.rst') not in file_names \
+                    and '"version"' in conflict['body1'] and '"version"' in conflict['body2']:
+
+                conflict['solution'] = solve_version(conflict['body1'], conflict['body2'])
+
+                print(conflict)
+            else:
+                conflicts.remove(conflict)
+
+    return conflicts
 
 
 def parse_version(line):
@@ -199,18 +219,18 @@ def solve_version(old_version, new_version):
     return version_line
 
 
-def solve_conflict(file_name, conflict_lines, solution):
-    solution_lines = solution.split('\n')[0:-1]
-    with open(file_name, 'r') as file:
+def solve_conflict(conflict):
+    solution_lines = conflict['solution'].split('\n')[0:-1]
+    with open(conflict['file'], 'r') as file:
         data = file.readlines()
-        del data[conflict_lines[0]: conflict_lines[1] - 1]
+        del data[conflict['lines'][0] + 1: conflict['lines'][1]]
         for i in range(len(solution_lines)):
-            data.insert(conflict_lines[0] + i, solution_lines[i] + '\n')
+            data.insert(conflict['lines'][0] + i + 1, solution_lines[i] + '\n')
 
-    with open(file_name, 'w') as file:
+    with open(conflict['file'], 'w') as file:
         file.writelines(data)
 
-    print(file_name, 'conflict solved')
+    print(conflict['file'], 'conflict solved')
 
 
 if __name__ == "__main__":
