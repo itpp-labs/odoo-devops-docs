@@ -40,6 +40,7 @@ And two optional ones for setting up alternative names for remotes:
 --upstream_remote - will be used as name for "upstream" remote. Default value is "upstream".
 --origin_remote - will be used as name for "origin" remote. Default value is "origin".
 --auto_resolve - option for making some automatic resolving.
+--auto_push - option for automatically push branch to origin repository.
 
 Merge example of pos-addons from 11.0 to 12.0:
 

@@ -15,6 +15,8 @@ def main():
                         default='origin')
     parser.add_argument('--auto_resolve', help="option for making some automatic resolving",
                         dest='auto_resolve', action='store_true')
+    parser.add_argument('--auto_push', help="option for automatically push branch to origin repo",
+                        dest='auto_push', action='store_true')
     parser.add_argument("from_branch", help="Name of branch, from which merge will be made")
     parser.add_argument("in_branch", help="Name of branch, in which merge will be made")
 
@@ -22,13 +24,14 @@ def main():
     upstream_remote = args.upstream_remote
     origin_remote = args.origin_remote
     auto_resolve = args.auto_resolve
+    auto_push = args.auto_push
     from_branch = args.from_branch
     in_branch = args.in_branch
 
     fetch(upstream_remote)
     call(['git', 'checkout', upstream_remote + '/' + in_branch])
 
-    new_branch_name = in_branch + '-' + get_last_commit_on_branch(upstream_remote + '/' + from_branch)
+    new_branch_name = in_branch + '-automerge-' + get_last_commit_on_branch(upstream_remote + '/' + from_branch)
     print(new_branch_name)
     if branch_exists(new_branch_name):
         abort_merge()
@@ -62,6 +65,10 @@ def main():
         else:
             abort_merge()
 
+    if auto_push:
+        push_with_upstream(origin_remote, new_branch_name)
+        print(str(new_branch_name), 'pushed to', origin_remote)
+
 
 def clone_repo(url):
     call(['git', 'clone', url])
@@ -79,6 +86,10 @@ def get_remote_name(name):
 
 def fetch(remote):
     call(['git', 'fetch', remote])
+
+
+def push_with_upstream(remote, branch):
+    call(['git', 'push', '--set-upstream', remote, branch])
 
 
 def commit_file(file_name, message):
