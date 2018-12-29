@@ -32,7 +32,7 @@ def main():
     elif github_token is not None:
         github = Github(github_token)
     else:
-        print('Please specified github login/password or token')
+        print('Please specify github login/password or token')
 
     repo = github.get_repo(base_repo_name)
 
