@@ -39,6 +39,7 @@ Where positional arguments are:
 And two optional ones for setting up alternative names for remotes:
 --upstream_remote - will be used as name for "upstream" remote. Default value is "upstream".
 --origin_remote - will be used as name for "origin" remote. Default value is "origin".
+--new_branch_name - name for branch which will be created.
 --auto_resolve - option for making some automatic resolving.
 --auto_push - option for automatically push branch to origin repository.
 

@@ -13,6 +13,8 @@ def main():
                         default='upstream')
     parser.add_argument("--origin_remote", help="Remote where repository, in which branch will be created, is located",
                         default='origin')
+    parser.add_argument("--new_branch_name", help="Name for branch which will be created",
+                        default=None)
     parser.add_argument('--auto_resolve', help="option for making some automatic resolving",
                         dest='auto_resolve', action='store_true')
     parser.add_argument('--auto_push', help="option for automatically push branch to origin repo",
@@ -27,11 +29,12 @@ def main():
     auto_push = args.auto_push
     from_branch = args.from_branch
     in_branch = args.in_branch
+    new_branch_name = args.new_branch_name
 
     fetch(upstream_remote)
     call(['git', 'checkout', upstream_remote + '/' + in_branch])
-
-    new_branch_name = in_branch + '-automerge-' + get_last_commit_on_branch(upstream_remote + '/' + from_branch)
+    if new_branch_name is None:
+        new_branch_name = in_branch + '-automerge-' + get_last_commit_on_branch(upstream_remote + '/' + from_branch)
     print(new_branch_name)
     if branch_exists(new_branch_name):
         abort_merge()
