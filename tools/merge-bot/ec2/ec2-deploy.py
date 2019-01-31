@@ -1,6 +1,6 @@
 import os
-import time
 import json
+import time
 import zipfile
 import boto3
 
@@ -32,6 +32,18 @@ def create_ec2_instance(key_name, user_data):
             'sg-00f3b71d4b6021b03',
         ]
     )
+    return response
+
+
+def create_ssm_parameters(ssm_parameters):
+    ssm_client = boto3.client('ssm')
+    for name in ssm_parameters:
+        response = ssm_client.put_parameter(
+            Name=name,
+            Value=ssm_parameters[name],
+            Type='SecureString',
+            Overwrite=True
+        )
     return response
 
 
@@ -81,7 +93,7 @@ def create_lambda_function(function_role, function_name, ec2_instance_id, queue_
     return response
 
 
-def create_role_for_lambda(role_name, role_policies):
+def create_role(role_name, service, role_policies):
     iam_client = boto3.client('iam')
 
     assume_role_policy_document = json.dumps({
@@ -125,12 +137,20 @@ def create_sqs(queue_name):
 
 
 def main():
-    '''key_name = 'github-bot-key'
+    region = 'us-east-2'
+    key_name = 'github-bot-key'
     queue_name = 'github-bot-queue'
     user_data = open('ec2/ec2-script.sh').read()
     roles_for_lambda = ['AmazonSQSFullAccess', 'AmazonEC2FullAccess', 'AWSLambdaExecute']
-    role_name = 'github-bot-lambda-role'
+    role_name_lambda = 'github-bot-lambda-role'
+    roles_for_ec2 = ['AmazonSQSFullAccess', 'AmazonEC2RoleforSSM']
+    role_name_ec2 = 'github-bot-ec2-role'
     lambda_name = 'github-bot-lambda'
+    ssm_parameters = {
+        'QUEUE_NAME': queue_name,
+        'SHUTDOWN_TIME': '60',
+        'GITHUB_TOKEN_FOR_BOT': os.getenv('GITHUB_TOKEN_FOR_BOT')
+    }
 
     create_sqs(queue_name)
     print('SQS queue {} created'.format(queue_name))
@@ -138,22 +158,27 @@ def main():
     create_key_pair_for_ec2(key_name)
     print('Key pair for EC2 {} created'.format(key_name))
 
+    ssm_response = create_ssm_parameters(ssm_parameters)
+    for name in ssm_parameters:
+        print('SSM parameter {} created'.format(name))
+
+    iam_response = create_role(role_name_ec2, 'ec2.amazonaws.com', roles_for_ec2)
+    role_arn = iam_response['Role']['Arn']
+    print('IAM role {} created'.format(role_name_ec2))
+
     ec2_response = create_ec2_instance(key_name, user_data)
     instance_id = ec2_response['Instances'][0]['InstanceId']
     print('EC2 instance (id: {}) created'.format(instance_id))
 
-    iam_response = create_role_for_lambda(role_name, roles_for_lambda)
+    iam_response = create_role(role_name_lambda, 'lambda.amazonaws.com', roles_for_lambda)
     role_arn = iam_response['Role']['Arn']
-    print('IAM role {} created'.format(role_name))
+    print('IAM role {} created'.format(role_name_lambda))
 
     print(role_arn, lambda_name, instance_id)
     time.sleep(10)
 
-    lambda_response = create_lambda_function(role_arn, lambda_name, instance_id, queue_name)
-    print('Lambda function {} created'.format(lambda_name))'''
-
-    lambda_response = create_lambda_function('arn:aws:iam::504794208121:role/service-role/github-bot-lambda-role', 'github-bot-lambda', 'i-0b46c4c16f4937644', 'github-bot-queue')
-    print('Lambda function {} created'.format('github-bot-lambda'))
+    lambda_response = create_lambda_function(role_arn, lambda_name, instance_id, queue_name, region)
+    print('Lambda function {} created'.format(lambda_name))
 
 
 if __name__ == "__main__":
