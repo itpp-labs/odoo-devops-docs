@@ -16,22 +16,22 @@ def main():
     queue = sqs.get_queue_by_name(QueueName=queue_name)
 
     messages = []
-    response = queue.get_messages(10)
+    response = queue.receive_messages(MaxNumberOfMessages=10)
     while len(response) > 0:
         messages.extend(response)
-        response = queue.get_messages(10)
-
-    if len(messages) > 0 and shutdown_time != 0:
-        Popen(['sudo', 'shutdown', '-c'])
-        Popen(['sudo', 'shutdown', '-h', '+{}'.format(shutdown_time)])
+        response = queue.receive_messages(MaxNumberOfMessages=10)
 
     for message in messages:
-        body = json.loads(message[0].body)
-        if body['action']:
-            print('python', 'odoo-devops/tools/merge-bot/review-bot.py',
-                  body['repository']['full_name'], str(body['number']), '--github_token', github_token)
-            Popen(['python', 'odoo-devops/tools/merge-bot/review-bot.py',
-                   body['repository']['full_name'], str(body['number']), '--github_token', github_token])
+        body = json.loads(message.body)
+        if 'action' and 'number' and 'pull_request' in body:
+            if body['action'] == 'opened':
+                print('python', 'odoo-devops/tools/merge-bot/review-bot.py',
+                      body['repository']['full_name'], str(body['number']), '--github_token', github_token)
+                Popen(['python', 'odoo-devops/tools/merge-bot/review-bot.py',
+                       body['repository']['full_name'], str(body['number']), '--github_token', github_token])
+
+                Popen(['sudo', 'shutdown', '-c'])
+                Popen(['sudo', 'shutdown', '-h', '+{}'.format(shutdown_time)])
 
         queue.delete_messages(Entries=[{
             'Id': message.message_id,

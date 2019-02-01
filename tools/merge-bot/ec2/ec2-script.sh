@@ -1,5 +1,5 @@
-#!/usr/bin/env bash
-sudo yum install git
+#!/bin/bash
+sudo yum install git -y
 pip install PyGithub
 pip install boto3
 git clone https://gitlab.com/Rusllan/odoo-devops.git

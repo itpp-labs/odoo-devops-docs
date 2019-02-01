@@ -5,7 +5,7 @@ import zipfile
 import boto3
 
 
-def create_ec2_instance(key_name, user_data):
+def create_ec2_instance(instance_role, key_name, user_data):
     ec2_client = boto3.client('ec2')
     response = ec2_client.run_instances(
         BlockDeviceMappings=[
@@ -79,6 +79,7 @@ def create_lambda_function(function_role, function_name, ec2_instance_id, queue_
             }
         }
     )
+    # TODO: connect api gateway to lambda
     '''lambda_client.add_permission(
         FunctionName=function_name,
         StatementId=function_name + "-ID",
@@ -102,7 +103,7 @@ def create_role(role_name, service, role_policies):
             {
                 "Effect": "Allow",
                 "Principal": {
-                    "Service": "lambda.amazonaws.com"
+                    "Service": service
                 },
                 "Action": "sts:AssumeRole"
             }
@@ -117,15 +118,14 @@ def create_role(role_name, service, role_policies):
     for policy in role_policies:
         iam_client.attach_role_policy(
             RoleName=response['Role']['RoleName'],
-            PolicyArn='arn:aws:iam::aws:policy/{}'.format(policy)
+            PolicyArn=policy
         )
     return response
 
 
 def create_api_gateway(function_name):
     apigateway_client = boto3.client('apigateway')
-
-    #return response
+    # TODO: create api gateway
 
 
 def create_sqs(queue_name):
@@ -137,13 +137,15 @@ def create_sqs(queue_name):
 
 
 def main():
-    region = 'us-east-2'
     key_name = 'github-bot-key'
     queue_name = 'github-bot-queue'
     user_data = open('ec2/ec2-script.sh').read()
-    roles_for_lambda = ['AmazonSQSFullAccess', 'AmazonEC2FullAccess', 'AWSLambdaExecute']
+    roles_for_lambda = ['arn:aws:iam::aws:policy/AmazonSQSFullAccess',
+                        'arn:aws:iam::aws:policy/AmazonEC2FullAccess',
+                        'arn:aws:iam::aws:policy/AWSLambdaExecute']
     role_name_lambda = 'github-bot-lambda-role'
-    roles_for_ec2 = ['AmazonSQSFullAccess', 'AmazonEC2RoleforSSM']
+    roles_for_ec2 = ['arn:aws:iam::aws:policy/AmazonSQSFullAccess',
+                     'arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM']
     role_name_ec2 = 'github-bot-ec2-role'
     lambda_name = 'github-bot-lambda'
     ssm_parameters = {
@@ -166,7 +168,7 @@ def main():
     role_arn = iam_response['Role']['Arn']
     print('IAM role {} created'.format(role_name_ec2))
 
-    ec2_response = create_ec2_instance(key_name, user_data)
+    ec2_response = create_ec2_instance(role_name_ec2, key_name, user_data)
     instance_id = ec2_response['Instances'][0]['InstanceId']
     print('EC2 instance (id: {}) created'.format(instance_id))
 
@@ -174,10 +176,9 @@ def main():
     role_arn = iam_response['Role']['Arn']
     print('IAM role {} created'.format(role_name_lambda))
 
-    print(role_arn, lambda_name, instance_id)
     time.sleep(10)
 
-    lambda_response = create_lambda_function(role_arn, lambda_name, instance_id, queue_name, region)
+    lambda_response = create_lambda_function(role_arn, lambda_name, instance_id, queue_name)
     print('Lambda function {} created'.format(lambda_name))
 
 
