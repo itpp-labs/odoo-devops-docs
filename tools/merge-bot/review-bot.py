@@ -32,8 +32,6 @@ def main():
 
     repo = github.get_repo(repo_name)
     pr = repo.get_pull(int(pr_number))
-    print(pr.number)
-    print(pr.changed_files)
     review_comments = []
 
     installable_modules = []
@@ -61,11 +59,11 @@ def main():
 
     if review_comments:
         pr.create_review(commit=pr.get_commits()[pr.get_commits().totalCount - 1],
-                         body='Some features needs to be tested'
+                         body='Some new features needs to be tested'
                          , event='COMMENT', comments=review_comments)
     else:
         pr.create_review(commit=pr.get_commits()[pr.get_commits().totalCount - 1],
-                         body='No features needs to be tested'
+                         body='No new features need to be tested'
                          , event='COMMENT')
 
 
