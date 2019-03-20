@@ -29,17 +29,23 @@ def main():
         github = Github(github_token)
     else:
         print('Please specify github login/password or token')
+        exit()
 
     repo = github.get_repo(repo_name)
     pr = repo.get_pull(int(pr_number))
     review_comments = []
-
-    installable_modules = []
+    updated_modules = set()
+    installable_modules = set()
     for file in pr.get_files():
+        module_name = file.filename.split('/')[0]
+        if module_name not in updated_modules:
+            updated_modules.add(module_name)
+
         if '__manifest__.py' in file.filename:
             html = requests.get(file.raw_url).text
             if "'installable': True" in html or '"installable": True' in html:
-                installable_modules.append(file.filename.split('/')[0])
+                installable_modules.add(module_name)
+
     for file in pr.get_files():
         if 'changelog.rst' in file.filename and file.filename.split('/')[0] in installable_modules:
             print(file.filename)
@@ -57,13 +63,20 @@ def main():
                                     'position': comment_line,
                                     'body': 'Someone has to test it'})
 
+    review_body = '{} modules {} updated:\n' \
+                  '* {}\n\n'.format(len(updated_modules),
+                                    'is' if len(updated_modules) == 1 else 'are',
+                                    '\n* '.join(updated_modules))
+
     if review_comments:
+        review_body += '{} features needs to be tested.'.format(len(review_comments))
         pr.create_review(commit=pr.get_commits()[pr.get_commits().totalCount - 1],
-                         body='Some new features needs to be tested'
+                         body=review_body
                          , event='COMMENT', comments=review_comments)
     else:
+        review_body += 'No new features need to be tested.'
         pr.create_review(commit=pr.get_commits()[pr.get_commits().totalCount - 1],
-                         body='No new features need to be tested'
+                         body=review_body
                          , event='COMMENT')
 
 
