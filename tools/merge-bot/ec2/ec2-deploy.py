@@ -1,7 +1,7 @@
 import os
 import json
 import time
-import zipfile
+from zipfile import ZipFile
 import boto3
 
 
@@ -37,7 +37,6 @@ def create_ec2_instance(instance_role, key_name, user_data):
 
 def create_ssm_parameters(ssm_parameters):
     ssm_client = boto3.client('ssm')
-    print(ssm_parameters)
     for name in ssm_parameters:
         response = ssm_client.put_parameter(
             Name=name,
@@ -52,7 +51,9 @@ def create_key_pair_for_ec2(key_name):
     ec2_client = boto3.client('ec2')
     response = ec2_client.create_key_pair(KeyName=key_name)
 
-    with open('{}.pem'.format(key_name), 'w') as key:
+    path_to_key = '{}{}.pem'.format('/'.join(os.path.realpath(__file__).split('/')[:-2]), key_name)
+
+    with open(path_to_key, 'w') as key:
         key.write(response['KeyMaterial'])
     return response
 
@@ -60,8 +61,9 @@ def create_key_pair_for_ec2(key_name):
 def create_lambda_function(function_role, function_name, ec2_instance_id, queue_name):
     lambda_client = boto3.client('lambda')
 
-    zipf = zipfile.ZipFile('lambda.zip', 'w')
-    zipf.write('lambda-function.py')
+    path_to_lambda = '/'.join(os.path.realpath(__file__).split('/')[:-2]) + '/lambda-function.py'
+    zipf = ZipFile('lambda.zip', 'w')
+    zipf.write(path_to_lambda, os.path.basename(path_to_lambda))
     zipf.close()
 
     with open('./lambda.zip', 'rb') as lambda_zip:
