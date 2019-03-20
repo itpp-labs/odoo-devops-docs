@@ -37,6 +37,7 @@ def create_ec2_instance(instance_role, key_name, user_data):
 
 def create_ssm_parameters(ssm_parameters):
     ssm_client = boto3.client('ssm')
+    print(ssm_parameters)
     for name in ssm_parameters:
         response = ssm_client.put_parameter(
             Name=name,
@@ -137,9 +138,10 @@ def create_sqs(queue_name):
 
 
 def main():
+    print('Starting deployment process.')
     key_name = 'github-bot-key'
     queue_name = 'github-bot-queue'
-    user_data = open('ec2/ec2-script.sh').read()
+    user_data = open('/'.join(os.path.realpath(__file__).split('/')[:-1]) + '/ec2-script.sh').read()
     roles_for_lambda = ['arn:aws:iam::aws:policy/AmazonSQSFullAccess',
                         'arn:aws:iam::aws:policy/AmazonEC2FullAccess',
                         'arn:aws:iam::aws:policy/AWSLambdaExecute']
@@ -180,6 +182,8 @@ def main():
 
     lambda_response = create_lambda_function(role_arn, lambda_name, instance_id, queue_name)
     print('Lambda function {} created'.format(lambda_name))
+
+    print('Deployment process succeeded.')
 
 
 if __name__ == "__main__":

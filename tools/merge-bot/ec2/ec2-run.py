@@ -10,7 +10,7 @@ def write_in_log(log_message):
     now = datetime.datetime.now()
     if not os.path.isdir('logs-github-bot/'):
         os.mkdir('logs-github-bot/')
-    with open('logs-github-bot//{}.txt'.format(now.strftime('%Y-%m-%d')), 'a') as logfile:
+    with open('logs-github-bot/{}.txt'.format(now.strftime('%Y-%m-%d')), 'a') as logfile:
         logfile.write('{} {}\n'.format(now.strftime('%Y-%m-%d %H:%M:%S'), log_message))
 
 
@@ -21,7 +21,7 @@ def write_message(message):
         os.mkdir('logs-github-bot/messages')
     while os.path.isfile('logs-github-bot/messages/{}-{}.txt'.format(now.strftime('%Y-%m-%d'), message_num)):
         message_num += 1
-    with open('logs-github-bot/messages/{}-{}.txt'.format(now.strftime('%Y-%m-%d')), 'w') as file:
+    with open('logs-github-bot/messages/{}-{}.txt'.format(now.strftime('%Y-%m-%d'), message_num), 'w') as file:
         file.write(message)
 
 
