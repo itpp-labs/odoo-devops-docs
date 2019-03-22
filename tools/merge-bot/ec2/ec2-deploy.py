@@ -2,6 +2,7 @@ import os
 import json
 import time
 from zipfile import ZipFile
+import argparse
 import boto3
 
 
@@ -140,18 +141,41 @@ def create_sqs(queue_name):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--github_token",
+                        help="Token from github account. If token not specified, it"
+                             " will be taken from MERGE_BOT_GITHUB_TOKEN environmental variable",
+                        default=os.getenv("MERGE_BOT_GITHUB_TOKEN"))
+    parser.add_argument("key_name",
+                        help="Name of a key in ec2 key pair to be created. Default value is \"github-bot-key\"",
+                        default="github-bot-key")
+    parser.add_argument("queue_name",
+                        help="Name of a queue to be created in SQS . Default value is \"github-bot-queue\"",
+                        default="github-bot-queue")
+    parser.add_argument("lambda_name",
+                        help="Name of a Lambda function to be created. Default value is \"ggithub-bot-lambda\"",
+                        default="github-bot-lambda")
+    parser.add_argument("role_name_lambda",
+                        help="Name of a role to be created for Lambda . Default value is \"github-bot-lambda-role\"",
+                        default="github-bot-lambda-role")
+    parser.add_argument("role_name_ec2",
+                        help="Name of a role to be created for EC2 . Default value is \"github-bot-ec2-role\"",
+                        default="github-bot-ec2-role")
+
+    args = parser.parse_args()
+    key_name = args.key_name
+    queue_name = args.queue_name
+    role_name_lambda = args.role_name_lambda
+    role_name_ec2 = args.role_name_ec2
+    lambda_name = args.lambda_name
+
     print('Starting deployment process.')
-    key_name = 'github-bot-key'
-    queue_name = 'github-bot-queue'
     user_data = open('/'.join(os.path.realpath(__file__).split('/')[:-1]) + '/ec2-script.sh').read()
     roles_for_lambda = ['arn:aws:iam::aws:policy/AmazonSQSFullAccess',
                         'arn:aws:iam::aws:policy/AmazonEC2FullAccess',
                         'arn:aws:iam::aws:policy/AWSLambdaExecute']
-    role_name_lambda = 'github-bot-lambda-role'
     roles_for_ec2 = ['arn:aws:iam::aws:policy/AmazonSQSFullAccess',
                      'arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM']
-    role_name_ec2 = 'github-bot-ec2-role'
-    lambda_name = 'github-bot-lambda'
     ssm_parameters = {
         'QUEUE_NAME': queue_name,
         'SHUTDOWN_TIME': '60',
