@@ -75,3 +75,9 @@ When bot is deployed and set up to one or more repositories it will make reviews
 Transfer of changes between branches will soon be implemented and documented.
 
 More information can be obtained in scripts/README.md file, where scripts witch bot uses described.
+
+## Removal 
+
+If you want to remove bot from your AWS, simply run deploy script with argument "--remove_bot":
+
+      $ python ./odoo-devops/tools/merge-bot/ec2/ec2-deploy.py --remove_bot
