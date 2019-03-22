@@ -7,6 +7,7 @@ import boto3
 
 
 def deploy_bot(github_token, deployment_info, info_filename):
+    path_to_info_filename = '/'.join(os.path.realpath(__file__).split('/')[:-2]) + '/' + info_filename
 
     queue_name = deployment_info['queue_name']
     key_name = deployment_info['key_name']
@@ -16,11 +17,15 @@ def deploy_bot(github_token, deployment_info, info_filename):
 
     print('Starting deployment process.')
     user_data = open('/'.join(os.path.realpath(__file__).split('/')[:-1]) + '/ec2-script.sh').read()
-    roles_for_lambda = ['arn:aws:iam::aws:policy/AmazonSQSFullAccess',
-                        'arn:aws:iam::aws:policy/AmazonEC2FullAccess',
-                        'arn:aws:iam::aws:policy/AWSLambdaExecute']
-    roles_for_ec2 = ['arn:aws:iam::aws:policy/AmazonSQSFullAccess',
-                     'arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM']
+    role_policies_for_ec2 = ['arn:aws:iam::aws:policy/AmazonSQSFullAccess',
+                             'arn:aws:iam::aws:policy/AmazonEC2FullAccess',
+                             'arn:aws:iam::aws:policy/AWSLambdaExecute']
+    deployment_info['role_policies_for_ec2'] = role_policies_for_ec2
+
+    role_policies_for_lambda = ['arn:aws:iam::aws:policy/AmazonSQSFullAccess',
+                                'arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM']
+    deployment_info['role_policies_for_lambda'] = role_policies_for_lambda
+
     ssm_parameters = {
         'QUEUE_NAME': queue_name,
         'SHUTDOWN_TIME': '60',
@@ -28,8 +33,9 @@ def deploy_bot(github_token, deployment_info, info_filename):
     }
     deployment_info['ssm_parameters'] = ssm_parameters
 
-    create_sqs(queue_name)
+    sqs_response = create_sqs(queue_name)
     print('SQS queue {} created'.format(queue_name))
+    deployment_info['sqs_queue_url'] = sqs_response['QueueUrl']
 
     create_key_pair_for_ec2(key_name)
     print('Key pair for EC2 {} created'.format(key_name))
@@ -38,31 +44,89 @@ def deploy_bot(github_token, deployment_info, info_filename):
     for name in ssm_parameters:
         print('SSM parameter {} created'.format(name))
 
-    iam_response = create_role(role_name_ec2, 'ec2.amazonaws.com', roles_for_ec2)
-    role_arn = iam_response['Role']['Arn']
+    create_role(role_name_ec2, 'ec2.amazonaws.com', role_policies_for_ec2)
     print('IAM role {} created'.format(role_name_ec2))
-    deployment_info['ec2_role_arn'] = role_arn
 
     ec2_response = create_ec2_instance(role_name_ec2, key_name, user_data)
     instance_id = ec2_response['Instances'][0]['InstanceId']
     print('EC2 instance (id: {}) created'.format(instance_id))
     deployment_info['ec2_instance_id'] = instance_id
 
-    iam_response = create_role(role_name_lambda, 'lambda.amazonaws.com', roles_for_lambda)
+    iam_response = create_role(role_name_lambda, 'lambda.amazonaws.com', role_policies_for_lambda)
     role_arn = iam_response['Role']['Arn']
     print('IAM role {} created'.format(role_name_lambda))
-    deployment_info['Lambda_role_arn'] = role_arn
 
     time.sleep(10)
 
-    lambda_response = create_lambda_function(role_arn, lambda_name, instance_id, queue_name)
+    create_lambda_function(role_arn, lambda_name, instance_id, queue_name)
     print('Lambda function {} created'.format(lambda_name))
 
-    with open(info_filename, 'w') as fp:
-        json.dump(deployment_info, fp)
+    with open(path_to_info_filename, 'w') as fp:
+        json.dump(deployment_info, fp, indent=4)
     print('Json file {} with deployment info is written'.format(info_filename))
 
     print('Deployment process succeeded.')
+
+
+def remove_bot(info_filename):
+    path_to_info_filename = '/'.join(os.path.realpath(__file__).split('/')[:-2]) + '/' + info_filename
+
+    deployment_info = read_deploy_info(path_to_info_filename)
+    queue_name = deployment_info['queue_name']
+    key_name = deployment_info['key_name']
+    path_to_key = '/'.join(os.path.realpath(__file__).split('/')[:-2]) + '/' + key_name + '.pem'
+
+    role_name_ec2 = deployment_info['role_name_ec2']
+    role_name_lambda = deployment_info['role_name_lambda']
+    lambda_name = deployment_info['lambda_name']
+    ec2_instance_id = deployment_info['ec2_instance_id']
+    ssm_parameters = list(deployment_info['ssm_parameters'].keys())
+    sqs_queue_url = deployment_info['sqs_queue_url']
+    role_policies_for_ec2 = deployment_info['role_policies_for_ec2']
+    role_policies_for_lambda = deployment_info['role_policies_for_lambda']
+
+    sqs_client = boto3.client('sqs')
+    ec2_client = boto3.client('ec2')
+    lambda_client = boto3.client('lambda')
+    ssm_client = boto3.client('ssm')
+
+    print('Starting removal process.')
+
+    sqs_client.delete_queue(QueueUrl=sqs_queue_url)
+    print('SQS queue {} removed'.format(queue_name))
+
+    ec2_client.delete_key_pair(KeyName=key_name)
+    print('Key pair for EC2 {} removed'.format(key_name))
+
+    ssm_client.delete_parameters(Names=ssm_parameters)
+    for name in ssm_parameters:
+        print('SSM parameter {} removed'.format(name))
+
+    delete_role(role_name_ec2, role_policies_for_ec2)
+    print('IAM role {} removed'.format(role_name_ec2))
+
+    ec2_client.terminate_instances(InstanceIds=[ec2_instance_id])
+    print('EC2 instance (id: {}) terminated'.format(ec2_instance_id))
+
+    delete_role(role_name_lambda, role_policies_for_lambda)
+    print('IAM role {} removed'.format(role_name_lambda))
+
+    lambda_client.delete_function(FunctionName=lambda_name)
+    print('Lambda function {} removed'.format(lambda_name))
+
+    os.remove(path_to_key)
+    print('Key file {} deleted'.format(info_filename))
+
+    os.remove(path_to_info_filename)
+    print('Json file {} with deployment info is deleted'.format(info_filename))
+
+    print('Removal process succeeded.')
+
+
+def read_deploy_info(info_filename):
+    with open(info_filename, 'r') as fp:
+        deployment_info = json.load(fp)
+    return deployment_info
 
 
 def create_ec2_instance(instance_role, key_name, user_data):
@@ -111,7 +175,7 @@ def create_key_pair_for_ec2(key_name):
     ec2_client = boto3.client('ec2')
     response = ec2_client.create_key_pair(KeyName=key_name)
 
-    path_to_key = '{}{}.pem'.format('/'.join(os.path.realpath(__file__).split('/')[:-2]), key_name)
+    path_to_key = '{}/{}.pem'.format('/'.join(os.path.realpath(__file__).split('/')[:-2]), key_name)
 
     with open(path_to_key, 'w') as key:
         key.write(response['KeyMaterial'])
@@ -199,43 +263,67 @@ def create_sqs(queue_name):
     return response
 
 
+def delete_role(role_name, role_policies):
+    iam_client = boto3.client('iam')
+    for policy_arn in role_policies:
+        iam_client.detach_role_policy(
+            RoleName=role_name,
+            PolicyArn=policy_arn
+        )
+    iam_client.delete_role(RoleName=role_name)
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--github_token",
-                        help="Token from github account. If token not specified, it"
-                             " will be taken from GITHUB_TOKEN_FOR_BOT environmental variable",
-                        default=os.getenv("GITHUB_TOKEN_FOR_BOT"))
-    parser.add_argument("--key_name",
-                        help="Name of a key in ec2 key pair to be created. Default value is \"github-bot-key\"",
-                        default="github-bot-key")
-    parser.add_argument("--queue_name",
-                        help="Name of a queue to be created in SQS . Default value is \"github-bot-queue\"",
-                        default="github-bot-queue")
-    parser.add_argument("--lambda_name",
-                        help="Name of a Lambda function to be created. Default value is \"ggithub-bot-lambda\"",
-                        default="github-bot-lambda")
-    parser.add_argument("--role_name_lambda",
-                        help="Name of a role to be created for Lambda . Default value is \"github-bot-lambda-role\"",
-                        default="github-bot-lambda-role")
-    parser.add_argument("--role_name_ec2",
-                        help="Name of a role to be created for EC2 . Default value is \"github-bot-ec2-role\"",
-                        default="github-bot-ec2-role")
-    parser.add_argument("--info_filename",
-                        help="Name of the json file with deployment information to be created."
-                             " Default value is \"Github-bot-deploy-info.json\"",
-                        default="Github-bot-deploy-info.json")
+    parser.add_argument(
+        "--github_token",
+        help="Token from github account. If token not specified, it"
+             " will be taken from GITHUB_TOKEN_FOR_BOT environmental variable.",
+        default=os.getenv("GITHUB_TOKEN_FOR_BOT"))
+    parser.add_argument(
+        "--key_name",
+        help="Name of a key in ec2 key pair to be created. Default value is \"github-bot-key\".",
+        default="github-bot-key")
+    parser.add_argument(
+        "--queue_name",
+        help="Name of a queue to be created in SQS . Default value is \"github-bot-queue\".",
+        default="github-bot-queue")
+    parser.add_argument(
+        "--lambda_name",
+        help="Name of a Lambda function to be created. Default value is \"ggithub-bot-lambda\".",
+        default="github-bot-lambda")
+    parser.add_argument(
+        "--role_name_lambda",
+        help="Name of a role to be created for Lambda . Default value is \"github-bot-lambda-role\".",
+        default="github-bot-lambda-role")
+    parser.add_argument(
+        "--role_name_ec2",
+        help="Name of a role to be created for EC2 . Default value is \"github-bot-ec2-role\".",
+        default="github-bot-ec2-role")
+    parser.add_argument(
+        "--info_filename",
+        help="Name of the json file with deployment information to be created."
+             " Default value is \"Github-bot-deploy-info.json\".",
+        default="Github-bot-deploy-info.json")
+    parser.add_argument(
+        '--remove_bot',
+        help="Option for removing already deployed bot from AWS.", dest='remove_bot',
+        action='store_true')
 
     args = parser.parse_args()
     if args.github_token is None:
         print('You need to specify github token in local variable GITHUB_TOKEN_FOR_BOT or with --github_token argument')
     else:
-        deployment_info = {'key_name': args.key_name,
-                           'queue_name': args.queue_name,
-                           'lambda_name': args.lambda_name,
-                           'role_name_lambda': args.role_name_lambda,
-                           'role_name_ec2': args.role_name_ec2}
+        if not args.remove_bot:
+            deployment_info = {'key_name': args.key_name,
+                               'queue_name': args.queue_name,
+                               'lambda_name': args.lambda_name,
+                               'role_name_lambda': args.role_name_lambda,
+                               'role_name_ec2': args.role_name_ec2}
 
-        deploy_bot(args.github_token, deployment_info, args.info_filename)
+            deploy_bot(args.github_token, deployment_info, args.info_filename)
+        else:
+            remove_bot(args.info_filename)
 
 
 if __name__ == "__main__":
