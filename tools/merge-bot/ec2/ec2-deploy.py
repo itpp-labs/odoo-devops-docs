@@ -179,6 +179,8 @@ def create_key_pair_for_ec2(key_name):
 
     with open(path_to_key, 'w') as key:
         key.write(response['KeyMaterial'])
+    os.chmod(path_to_key, 0o400)
+
     return response
 
 
