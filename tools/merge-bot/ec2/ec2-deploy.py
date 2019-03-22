@@ -6,6 +6,55 @@ import argparse
 import boto3
 
 
+def deploy_bot(key_name='github-bot-key',
+               queue_name='github-bot-queue',
+               lambda_name='github-bot-lambda',
+               role_name_lambda='github-bot-lambda-role',
+               role_name_ec2='github-bot-ec2-role'):
+
+    print('Starting deployment process.')
+    user_data = open('/'.join(os.path.realpath(__file__).split('/')[:-1]) + '/ec2-script.sh').read()
+    roles_for_lambda = ['arn:aws:iam::aws:policy/AmazonSQSFullAccess',
+                        'arn:aws:iam::aws:policy/AmazonEC2FullAccess',
+                        'arn:aws:iam::aws:policy/AWSLambdaExecute']
+    roles_for_ec2 = ['arn:aws:iam::aws:policy/AmazonSQSFullAccess',
+                     'arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM']
+    ssm_parameters = {
+        'QUEUE_NAME': queue_name,
+        'SHUTDOWN_TIME': '60',
+        'GITHUB_TOKEN_FOR_BOT': os.getenv('GITHUB_TOKEN_FOR_BOT')
+    }
+
+    create_sqs(queue_name)
+    print('SQS queue {} created'.format(queue_name))
+
+    create_key_pair_for_ec2(key_name)
+    print('Key pair for EC2 {} created'.format(key_name))
+
+    ssm_response = create_ssm_parameters(ssm_parameters)
+    for name in ssm_parameters:
+        print('SSM parameter {} created'.format(name))
+
+    iam_response = create_role(role_name_ec2, 'ec2.amazonaws.com', roles_for_ec2)
+    role_arn = iam_response['Role']['Arn']
+    print('IAM role {} created'.format(role_name_ec2))
+
+    ec2_response = create_ec2_instance(role_name_ec2, key_name, user_data)
+    instance_id = ec2_response['Instances'][0]['InstanceId']
+    print('EC2 instance (id: {}) created'.format(instance_id))
+
+    iam_response = create_role(role_name_lambda, 'lambda.amazonaws.com', roles_for_lambda)
+    role_arn = iam_response['Role']['Arn']
+    print('IAM role {} created'.format(role_name_lambda))
+
+    time.sleep(10)
+
+    lambda_response = create_lambda_function(role_arn, lambda_name, instance_id, queue_name)
+    print('Lambda function {} created'.format(lambda_name))
+
+    print('Deployment process succeeded.')
+
+
 def create_ec2_instance(instance_role, key_name, user_data):
     ec2_client = boto3.client('ec2')
     response = ec2_client.run_instances(
@@ -163,53 +212,13 @@ def main():
                         default="github-bot-ec2-role")
 
     args = parser.parse_args()
-    key_name = args.key_name
-    queue_name = args.queue_name
-    role_name_lambda = args.role_name_lambda
-    role_name_ec2 = args.role_name_ec2
-    lambda_name = args.lambda_name
 
-    print('Starting deployment process.')
-    user_data = open('/'.join(os.path.realpath(__file__).split('/')[:-1]) + '/ec2-script.sh').read()
-    roles_for_lambda = ['arn:aws:iam::aws:policy/AmazonSQSFullAccess',
-                        'arn:aws:iam::aws:policy/AmazonEC2FullAccess',
-                        'arn:aws:iam::aws:policy/AWSLambdaExecute']
-    roles_for_ec2 = ['arn:aws:iam::aws:policy/AmazonSQSFullAccess',
-                     'arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM']
-    ssm_parameters = {
-        'QUEUE_NAME': queue_name,
-        'SHUTDOWN_TIME': '60',
-        'GITHUB_TOKEN_FOR_BOT': os.getenv('GITHUB_TOKEN_FOR_BOT')
-    }
-
-    create_sqs(queue_name)
-    print('SQS queue {} created'.format(queue_name))
-
-    create_key_pair_for_ec2(key_name)
-    print('Key pair for EC2 {} created'.format(key_name))
-
-    ssm_response = create_ssm_parameters(ssm_parameters)
-    for name in ssm_parameters:
-        print('SSM parameter {} created'.format(name))
-
-    iam_response = create_role(role_name_ec2, 'ec2.amazonaws.com', roles_for_ec2)
-    role_arn = iam_response['Role']['Arn']
-    print('IAM role {} created'.format(role_name_ec2))
-
-    ec2_response = create_ec2_instance(role_name_ec2, key_name, user_data)
-    instance_id = ec2_response['Instances'][0]['InstanceId']
-    print('EC2 instance (id: {}) created'.format(instance_id))
-
-    iam_response = create_role(role_name_lambda, 'lambda.amazonaws.com', roles_for_lambda)
-    role_arn = iam_response['Role']['Arn']
-    print('IAM role {} created'.format(role_name_lambda))
-
-    time.sleep(10)
-
-    lambda_response = create_lambda_function(role_arn, lambda_name, instance_id, queue_name)
-    print('Lambda function {} created'.format(lambda_name))
-
-    print('Deployment process succeeded.')
+    deploy_bot(args.github_token,
+               key_name=args.key_name,
+               queue_name=args.queue_name,
+               lambda_name=args.lambda_name,
+               role_name_lambda=args.role_name_lambda,
+               role_name_ec2=args.role_name_ec2)
 
 
 if __name__ == "__main__":
