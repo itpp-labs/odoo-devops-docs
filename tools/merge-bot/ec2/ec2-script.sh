@@ -2,7 +2,7 @@
 sudo yum install git -y
 pip install PyGithub
 pip install boto3
-git clone https://gitlab.com/Rusllan/odoo-devops.git
+git clone https://gitlab.com/Rusllan/odoo-devops.git /home/ec2-user/odoo-devops
 sudo chmod +x odoo-devops/tools/merge-bot/ec2/ec2-run.py
 sudo chmod +x odoo-devops/tools/merge-bot/merge-bot.py
 sudo chmod +x odoo-devops/tools/merge-bot/review-bot.py
