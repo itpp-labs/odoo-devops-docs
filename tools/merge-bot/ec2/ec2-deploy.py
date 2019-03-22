@@ -6,11 +6,13 @@ import argparse
 import boto3
 
 
-def deploy_bot(key_name='github-bot-key',
-               queue_name='github-bot-queue',
-               lambda_name='github-bot-lambda',
-               role_name_lambda='github-bot-lambda-role',
-               role_name_ec2='github-bot-ec2-role'):
+def deploy_bot(github_token, deployment_info, info_filename):
+
+    queue_name = deployment_info['queue_name']
+    key_name = deployment_info['key_name']
+    role_name_ec2 = deployment_info['role_name_ec2']
+    role_name_lambda = deployment_info['role_name_lambda']
+    lambda_name = deployment_info['lambda_name']
 
     print('Starting deployment process.')
     user_data = open('/'.join(os.path.realpath(__file__).split('/')[:-1]) + '/ec2-script.sh').read()
@@ -22,8 +24,9 @@ def deploy_bot(key_name='github-bot-key',
     ssm_parameters = {
         'QUEUE_NAME': queue_name,
         'SHUTDOWN_TIME': '60',
-        'GITHUB_TOKEN_FOR_BOT': os.getenv('GITHUB_TOKEN_FOR_BOT')
+        'GITHUB_TOKEN_FOR_BOT': github_token
     }
+    deployment_info['ssm_parameters'] = ssm_parameters
 
     create_sqs(queue_name)
     print('SQS queue {} created'.format(queue_name))
@@ -31,26 +34,33 @@ def deploy_bot(key_name='github-bot-key',
     create_key_pair_for_ec2(key_name)
     print('Key pair for EC2 {} created'.format(key_name))
 
-    ssm_response = create_ssm_parameters(ssm_parameters)
+    create_ssm_parameters(ssm_parameters)
     for name in ssm_parameters:
         print('SSM parameter {} created'.format(name))
 
     iam_response = create_role(role_name_ec2, 'ec2.amazonaws.com', roles_for_ec2)
     role_arn = iam_response['Role']['Arn']
     print('IAM role {} created'.format(role_name_ec2))
+    deployment_info['ec2_role_arn'] = role_arn
 
     ec2_response = create_ec2_instance(role_name_ec2, key_name, user_data)
     instance_id = ec2_response['Instances'][0]['InstanceId']
     print('EC2 instance (id: {}) created'.format(instance_id))
+    deployment_info['ec2_instance_id'] = instance_id
 
     iam_response = create_role(role_name_lambda, 'lambda.amazonaws.com', roles_for_lambda)
     role_arn = iam_response['Role']['Arn']
     print('IAM role {} created'.format(role_name_lambda))
+    deployment_info['Lambda_role_arn'] = role_arn
 
     time.sleep(10)
 
     lambda_response = create_lambda_function(role_arn, lambda_name, instance_id, queue_name)
     print('Lambda function {} created'.format(lambda_name))
+
+    with open(info_filename, 'w') as fp:
+        json.dump(deployment_info, fp)
+    print('Json file {} with deployment info is written'.format(info_filename))
 
     print('Deployment process succeeded.')
 
@@ -193,32 +203,39 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--github_token",
                         help="Token from github account. If token not specified, it"
-                             " will be taken from MERGE_BOT_GITHUB_TOKEN environmental variable",
-                        default=os.getenv("MERGE_BOT_GITHUB_TOKEN"))
-    parser.add_argument("key_name",
+                             " will be taken from GITHUB_TOKEN_FOR_BOT environmental variable",
+                        default=os.getenv("GITHUB_TOKEN_FOR_BOT"))
+    parser.add_argument("--key_name",
                         help="Name of a key in ec2 key pair to be created. Default value is \"github-bot-key\"",
                         default="github-bot-key")
-    parser.add_argument("queue_name",
+    parser.add_argument("--queue_name",
                         help="Name of a queue to be created in SQS . Default value is \"github-bot-queue\"",
                         default="github-bot-queue")
-    parser.add_argument("lambda_name",
+    parser.add_argument("--lambda_name",
                         help="Name of a Lambda function to be created. Default value is \"ggithub-bot-lambda\"",
                         default="github-bot-lambda")
-    parser.add_argument("role_name_lambda",
+    parser.add_argument("--role_name_lambda",
                         help="Name of a role to be created for Lambda . Default value is \"github-bot-lambda-role\"",
                         default="github-bot-lambda-role")
-    parser.add_argument("role_name_ec2",
+    parser.add_argument("--role_name_ec2",
                         help="Name of a role to be created for EC2 . Default value is \"github-bot-ec2-role\"",
                         default="github-bot-ec2-role")
+    parser.add_argument("--info_filename",
+                        help="Name of the json file with deployment information to be created."
+                             " Default value is \"Github-bot-deploy-info.json\"",
+                        default="Github-bot-deploy-info.json")
 
     args = parser.parse_args()
+    if args.github_token is None:
+        print('You need to specify github token in local variable GITHUB_TOKEN_FOR_BOT or with --github_token argument')
+    else:
+        deployment_info = {'key_name': args.key_name,
+                           'queue_name': args.queue_name,
+                           'lambda_name': args.lambda_name,
+                           'role_name_lambda': args.role_name_lambda,
+                           'role_name_ec2': args.role_name_ec2}
 
-    deploy_bot(args.github_token,
-               key_name=args.key_name,
-               queue_name=args.queue_name,
-               lambda_name=args.lambda_name,
-               role_name_lambda=args.role_name_lambda,
-               role_name_ec2=args.role_name_ec2)
+        deploy_bot(args.github_token, deployment_info, args.info_filename)
 
 
 if __name__ == "__main__":
