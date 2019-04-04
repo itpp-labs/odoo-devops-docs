@@ -6,17 +6,17 @@ This is bot for transferring changes between different Odoo versions and writing
 
 For bot deployment you will need:
 
-* Github repository with your odoo modules. Like [this one](github.com/it-projects-llc/pos-addons);
+* Github repository with your odoo modules. Like [this one](https://github.com/it-projects-llc/pos-addons);
 
 * Account in Github from witch pull requests and reviews will be made.
 
-* Account in [Amazon Web Services](aws.amazon.com);
+* Account in [Amazon Web Services](https://aws.amazon.com);
 
 ## Deployment and setup
 
 In order to deploy bot and set it up for your repository you will need to:
 
-* Go to your [AWS Management Console](console.aws.amazon.com);
+* Go to your [AWS Management Console](https://console.aws.amazon.com);
 
 * In AWS Management Console click on your login in top right corner and then click on "My Security Credentials";
 
@@ -24,9 +24,9 @@ In order to deploy bot and set it up for your repository you will need to:
 
 * Now click on "Create New Access Key" and download the key;
 
-* Follow up [this](docs.aws.amazon.com/en_us/cli/latest/userguide/cli-chap-install.html) instruction for installing AWS CLI;
+* Follow up [this](https://docs.aws.amazon.com/en_us/cli/latest/userguide/cli-chap-install.html) instruction for installing AWS CLI;
 
-* Follow up [this](docs.aws.amazon.com/en_us/cli/latest/userguide/cli-chap-configure.html) instruction to configure AWS CLI. Use Access Key and Secret Access Key witch you downloaded from AWS Management Console;
+* Follow up [this](https://docs.aws.amazon.com/en_us/cli/latest/userguide/cli-chap-configure.html) instruction to configure AWS CLI. Use Access Key and Secret Access Key witch you downloaded from AWS Management Console;
 
 * Clone repository odoo-devops repository:
     
@@ -36,7 +36,7 @@ In order to deploy bot and set it up for your repository you will need to:
 
       $ pip install boto3
       
-* Login in your Github account (from witch pull requests and reviews will be made) and go to [personal access tokens page](github.com/settings/tokens);
+* Login in your Github account (from witch pull requests and reviews will be made) and go to [personal access tokens page](https://github.com/settings/tokens);
 
 * Click on "Generate new token" button and select "repo" in scopes. Then click on "Generate token" and save yout generated token;
 
@@ -51,7 +51,7 @@ In order to deploy bot and set it up for your repository you will need to:
 -------
 This part of instruction will be deleted when it will be automated and made part of ec2-deploy.py.
 
-* Go to [AWS Lambda page](console.aws.amazon.com/lambda/home) and click on github-bot-lambda;
+* Go to [AWS Lambda page](https://console.aws.amazon.com/lambda/home) and click on github-bot-lambda;
 
 * Now click on "API Gateway" button on the left panel to crate API Gateway for your Lambda function;
 
