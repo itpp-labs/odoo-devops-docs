@@ -4,6 +4,7 @@ from subprocess import Popen, call
 import requests
 import datetime
 import os
+import io
 
 
 def write_in_log(log_message):
@@ -15,7 +16,8 @@ def write_in_log(log_message):
 
 
 def update():
-    call(['git', '-C', 'odoo-devops', 'pull', 'origin'])
+    call(['git', '-C', 'odoo-devops', 'fetch', '--all'])
+    call(['git', '-C', 'odoo-devops', 'reset', '--hard', 'origin'])
 
 
 def write_message(message):
@@ -25,7 +27,8 @@ def write_message(message):
         os.mkdir('logs-github-bot/messages')
     while os.path.isfile('logs-github-bot/messages/{}-{}.txt'.format(now.strftime('%Y-%m-%d'), message_num)):
         message_num += 1
-    with open('logs-github-bot/messages/{}-{}.txt'.format(now.strftime('%Y-%m-%d'), message_num), 'w') as file:
+    with io.open('logs-github-bot/messages/{}-{}.txt'.format(now.strftime('%Y-%m-%d'), message_num),
+                 'w', encoding="utf-8") as file:
         file.write(message)
 
 
