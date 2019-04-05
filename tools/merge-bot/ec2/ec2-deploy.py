@@ -14,12 +14,14 @@ def deploy_bot(github_token, deployment_info, info_filename):
     role_name_ec2 = deployment_info['role_name_ec2']
     role_name_lambda = deployment_info['role_name_lambda']
     lambda_name = deployment_info['lambda_name']
+    instance_profile_name = deployment_info['instance_profile_name']
 
     print('Starting deployment process.')
     user_data = open('/'.join(os.path.realpath(__file__).split('/')[:-1]) + '/ec2-script.sh').read()
     role_policies_for_ec2 = ['arn:aws:iam::aws:policy/AmazonSQSFullAccess',
                              'arn:aws:iam::aws:policy/AmazonEC2FullAccess',
-                             'arn:aws:iam::aws:policy/AWSLambdaExecute']
+                             'arn:aws:iam::aws:policy/AWSLambdaExecute',
+                             'arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM']
     deployment_info['role_policies_for_ec2'] = role_policies_for_ec2
 
     role_policies_for_lambda = ['arn:aws:iam::aws:policy/AmazonSQSFullAccess',
@@ -47,7 +49,11 @@ def deploy_bot(github_token, deployment_info, info_filename):
     create_role(role_name_ec2, 'ec2.amazonaws.com', role_policies_for_ec2)
     print('IAM role {} created'.format(role_name_ec2))
 
-    ec2_response = create_ec2_instance(role_name_ec2, key_name, user_data)
+    iam_response = create_instance_profile(instance_profile_name, role_name_ec2)
+    instance_profile_arn = iam_response['InstanceProfile']['Arn']
+    print('Instance profile {} created'.format(instance_profile_name))
+
+    ec2_response = create_ec2_instance(instance_profile_name, instance_profile_arn, key_name, user_data)
     instance_id = ec2_response['Instances'][0]['InstanceId']
     print('EC2 instance (id: {}) created'.format(instance_id))
     deployment_info['ec2_instance_id'] = instance_id
@@ -84,6 +90,7 @@ def remove_bot(info_filename):
     sqs_queue_url = deployment_info['sqs_queue_url']
     role_policies_for_ec2 = deployment_info['role_policies_for_ec2']
     role_policies_for_lambda = deployment_info['role_policies_for_lambda']
+    instance_profile_name = deployment_info['instance_profile_name']
 
     sqs_client = boto3.client('sqs')
     ec2_client = boto3.client('ec2')
@@ -101,6 +108,9 @@ def remove_bot(info_filename):
     ssm_client.delete_parameters(Names=ssm_parameters)
     for name in ssm_parameters:
         print('SSM parameter {} removed'.format(name))
+
+    delete_instance_profile(instance_profile_name, role_name_ec2)
+    print('Instance profile {} removed'.format(instance_profile_name))
 
     delete_role(role_name_ec2, role_policies_for_ec2)
     print('IAM role {} removed'.format(role_name_ec2))
@@ -129,8 +139,9 @@ def read_deploy_info(info_filename):
     return deployment_info
 
 
-def create_ec2_instance(instance_role, key_name, user_data):
+def create_ec2_instance(instance_profile_name, instance_profile_arn, key_name, user_data):
     ec2_client = boto3.client('ec2')
+
     response = ec2_client.run_instances(
         BlockDeviceMappings=[
             {
@@ -156,19 +167,27 @@ def create_ec2_instance(instance_role, key_name, user_data):
             'sg-00f3b71d4b6021b03',
         ]
     )
+    time.sleep(30)
+    ec2_client.associate_iam_instance_profile(
+        IamInstanceProfile={
+            'Arn': instance_profile_arn,
+            'Name': instance_profile_name
+        },
+        InstanceId=response['Instances'][0]['InstanceId']
+    )
+
     return response
 
 
 def create_ssm_parameters(ssm_parameters):
     ssm_client = boto3.client('ssm')
     for name in ssm_parameters:
-        response = ssm_client.put_parameter(
+        ssm_client.put_parameter(
             Name=name,
             Value=ssm_parameters[name],
             Type='SecureString',
             Overwrite=True
         )
-    return response
 
 
 def create_key_pair_for_ec2(key_name):
@@ -252,6 +271,23 @@ def create_role(role_name, service, role_policies):
     return response
 
 
+def create_instance_profile(profile_name, role_name):
+    iam_client = boto3.client('iam')
+    iam = boto3.resource('iam')
+
+    response = iam_client.create_instance_profile(
+        InstanceProfileName=profile_name,
+        Path='/'
+    )
+
+    instance_profile = iam.InstanceProfile(profile_name)
+
+    instance_profile.add_role(
+        RoleName=role_name
+    )
+    return response
+
+
 def create_api_gateway(function_name):
     apigateway_client = boto3.client('apigateway')
     # TODO: create api gateway
@@ -273,6 +309,17 @@ def delete_role(role_name, role_policies):
             PolicyArn=policy_arn
         )
     iam_client.delete_role(RoleName=role_name)
+
+
+def delete_instance_profile(profile_name, role_name):
+    iam = boto3.resource('iam')
+
+    instance_profile = iam.InstanceProfile(profile_name)
+
+    instance_profile.remove_role(
+        RoleName=role_name
+    )
+    instance_profile.delete()
 
 
 def main():
@@ -303,6 +350,10 @@ def main():
         help="Name of a role to be created for EC2 . Default value is \"github-bot-ec2-role\".",
         default="github-bot-ec2-role")
     parser.add_argument(
+        "--instance_profile_name",
+        help="Name of a instance profile to be created for EC2 . Default value is \"github-instance-profile-name\".",
+        default="github-instance-profile-name")
+    parser.add_argument(
         "--info_filename",
         help="Name of the json file with deployment information to be created."
              " Default value is \"Github-bot-deploy-info.json\".",
@@ -321,7 +372,8 @@ def main():
                                'queue_name': args.queue_name,
                                'lambda_name': args.lambda_name,
                                'role_name_lambda': args.role_name_lambda,
-                               'role_name_ec2': args.role_name_ec2}
+                               'role_name_ec2': args.role_name_ec2,
+                               'instance_profile_name': args.instance_profile_name}
 
             deploy_bot(args.github_token, deployment_info, args.info_filename)
         else:
