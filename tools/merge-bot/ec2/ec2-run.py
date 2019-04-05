@@ -1,6 +1,6 @@
 import json
 import boto3
-from subprocess import Popen
+from subprocess import Popen, call
 import requests
 import datetime
 import os
@@ -12,6 +12,10 @@ def write_in_log(log_message):
         os.mkdir('logs-github-bot/')
     with open('logs-github-bot/{}.txt'.format(now.strftime('%Y-%m-%d')), 'a') as logfile:
         logfile.write('{} {}\n'.format(now.strftime('%Y-%m-%d %H:%M:%S'), log_message))
+
+
+def update():
+    call(['git', '-C', 'odoo-devops', 'pull', 'origin'])
 
 
 def write_message(message):
@@ -27,6 +31,9 @@ def write_message(message):
 
 def main():
     write_in_log('ec2-run script is running')
+
+    write_in_log('updating...')
+    update()
 
     region_name = requests.get('http://169.254.169.254/latest/meta-data/placement/availability-zone').text[:-1]
     ssm_client = boto3.client('ssm', region_name=region_name)
