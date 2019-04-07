@@ -15,11 +15,6 @@ def write_in_log(log_message):
         logfile.write('{} {}\n'.format(now.strftime('%Y-%m-%d %H:%M:%S'), log_message))
 
 
-def update():
-    call(['git', '-C', 'odoo-devops', 'fetch', '--all'])
-    call(['git', '-C', 'odoo-devops', 'reset', '--hard', 'origin'])
-
-
 def write_message(message):
     now = datetime.datetime.now()
     message_num = 1
@@ -32,11 +27,25 @@ def write_message(message):
         file.write(message)
 
 
+def download_repository(path, url):
+    call(['git', 'clone', url, path])
+
+
+def update_repository(path):
+    call(['git', '-C', path, 'fetch', '--all'])
+    call(['git', '-C', path, 'reset', '--hard', 'origin'])
+
+
+def update_bot():
+    call(['git', '-C', 'odoo-devops', 'fetch', '--all'])
+    call(['git', '-C', 'odoo-devops', 'reset', '--hard', 'origin'])
+
+
 def main():
     write_in_log('ec2-run script is running')
 
-    write_in_log('updating...')
-    update()
+    write_in_log('updating bot...')
+    update_bot()
 
     region_name = requests.get('http://169.254.169.254/latest/meta-data/placement/availability-zone').text[:-1]
     ssm_client = boto3.client('ssm', region_name=region_name)
@@ -70,8 +79,16 @@ def main():
                 Popen(['python', 'odoo-devops/tools/merge-bot/review-bot.py',
                        body['repository']['full_name'], str(body['number']), '--github_token', github_token])
 
-                write_in_log('review-script is running for pull request {} in repository: {}'.format(body['number'],
-                                                                                    body['repository']['full_name'] ))
+                write_in_log('review-script is running for pull request '
+                             '{} in repository: {}'.format(body['number'], body['repository']['full_name']))
+
+                repo_path = 'repositories/{}'.format(body['repository']['full_name'])
+
+                if os.path.isdir(repo_path):
+                    update_repository(repo_path)
+                else:
+                    download_repository(repo_path, body['repository']['clone_url'])
+
             else:
                 write_in_log('pull request is {}, not opened'.format(body['action']))
 
