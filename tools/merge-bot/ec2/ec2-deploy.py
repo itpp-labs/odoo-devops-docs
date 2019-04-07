@@ -21,11 +21,12 @@ def deploy_bot(github_token, deployment_info, info_filename):
     role_policies_for_ec2 = ['arn:aws:iam::aws:policy/AmazonSQSFullAccess',
                              'arn:aws:iam::aws:policy/AmazonEC2FullAccess',
                              'arn:aws:iam::aws:policy/AWSLambdaExecute',
-                             'arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM']
+                             'arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM',
+                             'arn:aws:iam::aws:policy/AmazonSSMFullAccess']
     deployment_info['role_policies_for_ec2'] = role_policies_for_ec2
 
     role_policies_for_lambda = ['arn:aws:iam::aws:policy/AmazonSQSFullAccess',
-                                'arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM']
+                                'arn:aws:iam::aws:policy/AmazonEC2FullAccess']
     deployment_info['role_policies_for_lambda'] = role_policies_for_lambda
 
     ssm_parameters = {
