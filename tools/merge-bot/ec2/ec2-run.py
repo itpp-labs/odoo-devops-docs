@@ -76,7 +76,7 @@ def main():
 
         if all(field in body for field in required_fields):
             if body['action'] == 'opened':
-                Popen(['python', 'odoo-devops/tools/merge-bot/review-bot.py',
+                Popen(['python', 'odoo-devops/tools/merge-bot/scripts/review.py',
                        body['repository']['full_name'], str(body['number']), '--github_token', github_token])
 
                 write_in_log('review-script is running for pull request '
