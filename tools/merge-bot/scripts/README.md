@@ -86,7 +86,7 @@ Where positional arguments are:
 And optional ones for setting up alternative names for remotes:
 * --github_login - Login from github account.
 * --github_password - Password from github account.
-* --github_token - Token from github account. Token or login/passord not specified will be taken from MERGE_BOT_GITHUB_TOKEN environmental variable.
+* --github_token - Token from github account. Token or login/passord not specified will be taken from GITHUB_TOKEN_FOR_BOT environmental variable.
 
 ### pull-request.py
 
@@ -107,4 +107,4 @@ Where positional arguments are:
 And optional ones for setting up alternative names for remotes:
 * --github_login - Login from github account.
 * --github_password - Password from github account.
-* --github_token - Token from github account. Token or login/passord not specified will be taken from MERGE_BOT_GITHUB_TOKEN environmental variable.
+* --github_token - Token from github account. Token or login/passord not specified will be taken from GITHUB_TOKEN_FOR_BOT environmental variable.

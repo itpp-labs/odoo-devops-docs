@@ -12,8 +12,8 @@ def main():
     parser.add_argument("--github_password", help="Password from github account", default=None)
     parser.add_argument("--github_token",
                         help="Token from github account. Token or login/passord not specified"
-                             " will be taken from MERGE_BOT_GITHUB_TOKEN environmental variable",
-                        default=os.getenv("MERGE_BOT_GITHUB_TOKEN"))
+                             " will be taken from GITHUB_TOKEN_FOR_BOT environmental variable",
+                        default=os.getenv("GITHUB_TOKEN_FOR_BOT"))
     parser.add_argument("repo_name", help="Name of repository where review will be made")
     parser.add_argument("pr_number", help="Number of PR in which review will be made")
     args = parser.parse_args()
