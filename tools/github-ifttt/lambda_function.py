@@ -4,12 +4,11 @@ import os
 import re
 from botocore.vendored.requests.packages import urllib3
 
-
 LOG_LEVEL = os.environ.get('LOG_LEVEL')
 GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
-IFTTT_HOOK_RED = os.environ.get('IFTTT_HOOK_RED')
-IFTTT_HOOK_GREEN = os.environ.get('IFTTT_HOOK_GREEN')
-
+IFTTT_HOOK_RED_PR = os.environ.get('IFTTT_HOOK_RED_PR')
+IFTTT_HOOK_RED_BRANCH = os.environ.get('IFTTT_HOOK_RED_BRANCH')
+IFTTT_HOOK_GREEN_PR = os.environ.get('IFTTT_HOOK_GREEN_PR')
 
 logger = logging.getLogger()
 if LOG_LEVEL:
@@ -38,10 +37,7 @@ def handle_payload(payload):
     check_run = payload.get('check_run')
     if not check_run:
         return
-    # TODO make more strong check for travis
-    if check_run['name'] != "Travis CI - Pull Request":
-        logger.debug('check run: %s', check_run['name'])
-        return
+
     conclusion = check_run.get('conclusion')
     logger.debug('conclusion: %s', conclusion)
     if not conclusion:
@@ -52,20 +48,29 @@ def handle_payload(payload):
         # ok
         return
 
+    # TODO make more strong check for travis
+    if check_run['name'] == "Travis CI - Pull Request":
+        return handle_payload_pr(payload, check_run, conclusion)
+    elif check_run['name'] == "Travis CI - Branch":
+        return handle_payload_branch(payload, check_run, conclusion)
+    else:
+        logger.debug('Unknown check name: %s', check_run['name'])
+        return
+
+
+def handle_payload_pr(payload, check_run, conclusion):
     output_text = check_run['output']['text']
     pull = re.search("/pull(/[0-9]+)", output_text).group(1)
     pulls_url = payload['repository']['pulls_url']
-
     # pull_info: https://developer.github.com/v3/pulls/#get-a-single-pull-request
     pull_info = get_pull_info(pulls_url, pull)
-
     login = pull_info['user']['login']
     check_run_html_url = check_run.get('html_url')
     pr_html_url = pull_info.get('html_url')
 
     if conclusion == 'success':
         notify_ifttt(
-            IFTTT_HOOK_GREEN,
+            IFTTT_HOOK_GREEN_PR,
             value1=login,
             value2=pr_html_url,
             value3=check_run_html_url
@@ -73,10 +78,29 @@ def handle_payload(payload):
     else:
         # failed
         notify_ifttt(
-            IFTTT_HOOK_RED,
+            IFTTT_HOOK_RED_PR,
             value1=login,
             value2=pr_html_url,
             value3=check_run_html_url
+        )
+    return True
+
+
+def handle_payload_branch(payload, check_run, conclusion):
+    login = payload.get('sender')['login']
+    check_run_html_url = check_run.get('html_url')
+    search_repo_result = re.search(r'\/.*\/(.*)\/runs', check_run_html_url)
+    repo = search_repo_result.group(0)
+    check_run_head_branch = check_run.get('check_suite').get('head_branch')
+    repo_url = 'https://github.com/%s/%s/tree/%s' % (login, repo, check_run_head_branch)
+    check_run_details_url = check_run.get('details_url')
+
+    if conclusion == 'failed':
+        notify_ifttt(
+            IFTTT_HOOK_RED_BRANCH,
+            value1=repo_url,
+            value2='%s - %s' % (repo, check_run_head_branch),
+            value3=check_run_details_url,
         )
     return True
 
