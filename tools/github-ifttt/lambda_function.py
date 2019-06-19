@@ -90,7 +90,7 @@ def handle_payload_branch(payload, check_run, conclusion):
     login = payload.get('sender')['login']
     check_run_html_url = check_run.get('html_url')
     search_repo_result = re.search(r'\/.*\/(.*)\/runs', check_run_html_url)
-    repo = search_repo_result.group(0)
+    repo = search_repo_result.group(1)
     check_run_head_branch = check_run.get('check_suite').get('head_branch')
     check_run_details_url = check_run.get('details_url')
 
