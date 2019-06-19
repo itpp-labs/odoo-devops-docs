@@ -53,6 +53,12 @@ Use ``{event}`` from ``Prepare IFTTT's hooks`` of this instruction. For example:
   * ``Value1`` -- Author of the pull-request
   * ``Value2`` -- Link to pull-request
   * ``Value3`` -- Link to the travis check
+  
+  and for checks of stable branch:
+  
+  * ``Value1`` -- Name of the branch
+  * ``Value2`` -- Name of the repo
+  * ``Value3`` -- Link to the travis check
 
 Travis settings
 ---------------
