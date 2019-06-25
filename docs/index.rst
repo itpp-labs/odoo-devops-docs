@@ -8,5 +8,6 @@ Odoo DevOps
    Docker/index
    Kubernetes/index
    Gitlab-ci/index
+   git/index	
    ifttt/index
    lint
