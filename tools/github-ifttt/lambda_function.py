@@ -94,7 +94,7 @@ def handle_payload_branch(payload, check_run, conclusion):
     check_run_head_branch = check_run.get('check_suite').get('head_branch')
     check_run_details_url = check_run.get('details_url')
 
-    if conclusion == 'failed':
+    if conclusion in ('failed', 'failure'):
         notify_ifttt(
             IFTTT_HOOK_RED_BRANCH,
             value1=check_run_head_branch,
