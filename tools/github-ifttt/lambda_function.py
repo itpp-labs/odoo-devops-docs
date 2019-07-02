@@ -91,6 +91,8 @@ def handle_payload_branch(payload, check_run, conclusion):
     check_run_html_url = check_run.get('html_url')
     search_repo_result = re.search(r'\/.*\/(.*)\/runs', check_run_html_url)
     repo = search_repo_result.group(1)
+    if repo == 'addons-dev':
+        return True
     check_run_head_branch = check_run.get('check_suite').get('head_branch')
     check_run_details_url = check_run.get('details_url')
 
