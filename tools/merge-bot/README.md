@@ -1,63 +1,83 @@
-Merge bot for transfering changes between odoo versions 
-=======================================================
+# Github bot
 
-This is scripts for automatically merging branches with modules, which have different odoo versions. This allow to transfer module changes between versions more easier and with the lowest possible human participation.
+This is bot for transferring changes between different Odoo versions and writing review. It based on Amazon Web Services (EC2, Lambda, SQS) and python scripts.
 
-Currently they creating a new branch that is ready to merge in branch you choosed and solve some version conflicts in manifest.py files
+## Requirements 
 
-In order to merge branches you will need: cloned repository with odoo modules and set up remotes "origin" and "upstream", or you can use alternative names for them via script arguments.
+For bot deployment you will need:
 
-* Upstream remote will be used to fork branches for merge.
-* Origin remote will be used to send pull request to
+* Github repository with your odoo modules. Like [this one](https://github.com/it-projects-llc/pos-addons);
 
-To use scripts you need to:
+* Account in Github from witch pull requests and reviews will be made.
 
-* Download scripts:
+* Account in [Amazon Web Services](https://aws.amazon.com);
 
+## Deployment and setup
+
+In order to deploy bot and set it up for your repository you will need to:
+
+* Go to your [AWS Management Console](https://console.aws.amazon.com);
+
+* In AWS Management Console click on your login in top right corner and then click on "My Security Credentials";
+
+* In My Security Credentials page click on "Access keys (access key ID and secret access key)";
+
+* Now click on "Create New Access Key" and download the key;
+
+* Follow up [this](https://docs.aws.amazon.com/en_us/cli/latest/userguide/cli-chap-install.html) instruction for installing AWS CLI;
+
+* Follow up [this](https://docs.aws.amazon.com/en_us/cli/latest/userguide/cli-chap-configure.html) instruction to configure AWS CLI. Use Access Key and Secret Access Key witch you downloaded from AWS Management Console;
+
+* Clone repository odoo-devops repository:
+    
       $ git clone git@gitlab.com:itpp/odoo-devops.git 
 
-* Give script required permissions: 
+* Install Boto3 package with pip or pip3:
 
-      sudo chmod +x odoo-devops/tools/merge-bot/merge-bot.py
+      $ pip install boto3
       
-* Create a symbolic link to script:
+* Login in your Github account (from witch pull requests and reviews will be made) and go to [personal access tokens page](https://github.com/settings/tokens);
 
-      sudo ln -s $(pwd)/odoo-devops/tools/merge-bot/merge-bot.py /usr/local/bin
+* Click on "Generate new token" button and select "repo" in scopes. Then click on "Generate token" and save yout generated token;
 
-* Run merge-bot.py with 2 arguments:
+* Set local environment variable GITHUB_TOKEN_FOR_BOT with value of your Github token:
 
-      $ merge-bot.py <from_branch> <in_branch>
-
-* Push branch in your repository:
-
-      $ git push origin
+      $ export GITHUB_TOKEN_FOR_BOT=<your Github token>
       
-Where positional arguments are:
-* from_branch - Name of branch, from which merge will be made
-* in_branch - Name of branch, in which merge will be made
+* Run ec2-deploy.py script (you can use python3 instead):
 
-And two optional ones for setting up alternative names for remotes:
---upstream_remote - will be used as name for "upstream" remote. Default value is "upstream".
---origin_remote - will be used as name for "origin" remote. Default value is "origin".
---auto_resolve - option for making some automatic resolving.
-
-Merge example of pos-addons from 11.0 to 12.0:
-
-* Checking if needed remotes are in place:
-
-      $ git remote -v
-
-      origin	git@github.com:Rusllan/pos-addons.git (fetch)
-      origin	git@github.com:Rusllan/pos-addons.git (push)
-      upstream	git@github.com:it-projects-llc/pos-addons.git (fetch)
-      upstream	git@github.com:it-projects-llc/pos-addons.git (push)
-
-* Running the script: 
-
-      $ merge-bot.py 11.0 12.0
+      $ python ./odoo-devops/tools/merge-bot/ec2/ec2-deploy.py
       
-* Push changes to origin repo:
+-------
+This part of instruction will be deleted when it will be automated and made part of ec2-deploy.py.
 
-      $ git push origin
-      
-Result of this merge you can see in PR: https://github.com/it-projects-llc/misc-addons/pull/682 
+* Go to [AWS Lambda page](https://console.aws.amazon.com/lambda/home) and click on github-bot-lambda;
+
+* Now click on "API Gateway" button on the left panel to crate API Gateway for your Lambda function;
+
+* In the panel that appears below pick "Create a new API" and "Open" (you also can choose other security mechanism but it will require additional set up) and click "Add";
+
+* Click on "Save" button on the top right corner and copy your API endpoint in below panel;
+-------
+
+* Login in your Github account (one with repository for witch you want use bot) and go to the repository page;
+
+* Click on "Settings" and then on "Webhooks" button;
+
+* Click on "Add webhook" and enter your API endpoint to Payload URL field. Choose "application/json" in "Content type" field;
+
+* In field "Which events would you like to trigger this webhook?" press "Let me select individual events.", then choose "Pull requests" and press on "Add webhook".
+
+## Usage
+
+When bot is deployed and set up to one or more repositories it will make reviews with changes for testing and list with all changed modules in all new pull requests.
+
+Transfer of changes between branches will soon be implemented and documented.
+
+More information can be obtained in scripts/README.md file, where scripts witch bot uses described.
+
+## Removal 
+
+If you want to remove bot from your AWS, simply run deploy script with argument "--remove_bot":
+
+      $ python ./odoo-devops/tools/merge-bot/ec2/ec2-deploy.py --remove_bot
