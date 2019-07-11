@@ -7,4 +7,5 @@
    :caption: Contents:
 
    github
+   github_merge_bot
 
