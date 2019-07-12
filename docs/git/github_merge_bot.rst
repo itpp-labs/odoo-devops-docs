@@ -2,7 +2,7 @@
  Merge bot for GitHub
 ======================
 
-The script gives the right to a certain circle of people to merge branches in the repository by sending the comment ``I approve to merge it now`` in the pull request.
+The script gives the right to a certain circle of people to merge branches in the repository by sending the certain comment in the pull request.
 
 Create AWS Lambda function
 --------------------------
@@ -15,9 +15,10 @@ Create AWS Lambda function
 
 * Environment variables
 
-  * ``GITHUB_TOKEN`` -- generate one in https://github.com/settings/tokens . You need merge rights
+  * ``GITHUB_TOKEN`` -- generate one in https://github.com/settings/tokens . Select scope ``repo``.
   * ``USERNAMES`` -- use comma-separated list of Github's usernames without @.
   * ``LOG_LEVEL`` -- optional. Set to DEBUG to get detailed logs in AWS CloudWatch.
+  * ``MSG_RQST_MERGE`` -- message-request for merge. Default: ``I approve to merge it now``
 
 * Trigger
 
