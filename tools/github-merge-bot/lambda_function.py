@@ -31,7 +31,7 @@ def lambda_handler(event, context):
         pull_info = get_pull_info(pulls_url, pull)
         branch_origin = pull_info['head']['ref']
         branch_upstream = pull_info['base']['ref']
-        username = pull_info['head']['user']['login']
+        username = payload.get('comment')['user']['login']
         headers = {
             'Authorization': 'token %s' % GITHUB_TOKEN,
             'Content-Type': 'application/json',
