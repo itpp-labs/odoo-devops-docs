@@ -39,7 +39,7 @@ def lambda_handler(event, context):
         }
         if username in USERNAMES.split(","):
             # Merging: https://developer.github.com/v3/repos/merging
-            make_merge(owner, repo, branch_upstream, branch_origin, headers)
+            make_merge_pr(owner, repo, pull_number, headers)
             # Comments: https://developer.github.com/v3/issues/comments/
             approve_comment = 'Approved by @%s' % username
             make_issue_comment(owner, repo, pull_number, headers, approve_comment)
@@ -64,20 +64,17 @@ def get_pull_info(pulls_url, pull):
     return res
 
 
-def make_merge(owner, repo, branch_upstream, branch_origin, headers):
-    # POST /repos/:owner/:repo/merges
-    url = 'https://api.github.com/repos/%s/%s/merges' % (owner, repo)
-    body = {
-        'base': branch_upstream,
-        'head': branch_origin
-    }
-    merge = json.dumps(body)
-    response = requests.request("POST", url, data=merge, headers=headers)
-    if response.status_code == 201:
-        logger.debug('Successfully created Merge "%s"' % merge)
+def make_merge_pr(owner, repo, pull_number, headers):
+    # PUT /repos/:owner/:repo/pulls/:pull_number/merge
+    url = 'https://api.github.com/repos/%s/%s/pulls/%s/merge' % (owner, repo, pull_number)
+
+    response = requests.request("PUT", url, headers=headers)
+    if response.status_code == 200:
+        logger.debug('Pull Request %s successfully merged', pull_number)
+        return True
     else:
-        logger.debug('Could not create Merge "%s"' % merge)
-        logger.debug('Response:', response.content)
+        logger.debug('Response: "%s"', response.content)
+        return False
 
 
 def make_issue_comment(owner, repo, pull_number, headers, approve_comment=None):
