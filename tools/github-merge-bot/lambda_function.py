@@ -47,7 +47,7 @@ def lambda_handler(event, context):
             approve_comment = 'Sorry @%s, but you don\'t have access to merge it' % username
             make_issue_comment(owner, repo, pull_number, headers, approve_comment)
     else:
-        logger.debug('Comment: %s ' % comment)
+        logger.debug('Comment: %s ', comment)
     if not comment:
         return
 
@@ -84,7 +84,7 @@ def make_issue_comment(owner, repo, pull_number, headers, approve_comment=None):
     comment = json.dumps(body)
     response = requests.request("POST", url, data=comment, headers=headers)
     if response.status_code == 201:
-        logger.debug('Successfully created Comment "%s"' % comment)
+        logger.debug('Successfully created Comment "%s"', comment)
     else:
-        logger.debug('Could not create Comment "%s"' % comment)
+        logger.debug('Could not create Comment "%s"', comment)
         logger.debug('Response:', response.content)
