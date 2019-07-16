@@ -87,4 +87,4 @@ def make_issue_comment(owner, repo, pull_number, headers, approve_comment=None):
         logger.debug('Successfully created Comment "%s"', comment)
     else:
         logger.debug('Could not create Comment "%s"', comment)
-        logger.debug('Response:', response.content)
+        logger.debug('Response: "%s"', response.content)
