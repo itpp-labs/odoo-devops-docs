@@ -49,7 +49,8 @@ def lambda_handler(event, context):
             'User-Agent': 'aws lambda handler'
         }
         if username in USERNAMES.split(","):
-            status = get_status_pr(owner, repo, branch_origin)
+            owner_head = pull_info['head']['user']['login']
+            status = get_status_pr(owner_head, repo, branch_origin)
             ifttt_handler(status, pull_info)
             # Merge a pull request (Merge Button): https://developer.github.com/v3/pulls/
             if make_merge_pr(owner, repo, pull_number, headers):
@@ -66,9 +67,9 @@ def lambda_handler(event, context):
         logger.debug('Comment: %s ', comment)
 
 
-def get_status_pr(owner, repo, branch_origin):
+def get_status_pr(owner_head, repo, branch_origin):
     # GET /repos/:owner/:repo/commits/:ref/status
-    url = 'https://api.github.com/repos/%s/%s/commits/%s/status' % (owner, repo, branch_origin)
+    url = 'https://api.github.com/repos/%s/%s/commits/%s/status' % (owner_head, repo, branch_origin)
     http = urllib3.PoolManager()
     res = http.request('GET', url, headers={
         # 'Content-Type': 'application/vnd.github.v3.raw+json',
