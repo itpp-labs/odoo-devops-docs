@@ -9,6 +9,9 @@ LOG_LEVEL = os.environ.get('LOG_LEVEL')
 GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
 USERNAMES = os.environ.get('USERNAMES')
 MSG_RQST_MERGE = os.environ.get('MSG_RQST_MERGE', 'I approve to merge it now')
+IFTTT_HOOK_RED_PR = os.environ.get('IFTTT_HOOK_RED_PR')
+IFTTT_HOOK_GREEN_PR = os.environ.get('IFTTT_HOOK_GREEN_PR')
+IFTTT_HOOK_NOT_FINISHED_PR = os.environ.get('IFTTT_HOOK_NOT_FINISHED_PR')
 
 logger = logging.getLogger()
 if LOG_LEVEL:
@@ -19,8 +22,11 @@ def lambda_handler(event, context):
     logger.debug("Event: \n%s", json.dumps(event))
     payload = json.loads(event["body"])
     logger.debug("Payload: \n%s", json.dumps(payload))
-    comment = payload.get('comment')['body']
-    if comment.strip() == MSG_RQST_MERGE:
+    comment = payload.get('comment')
+    if not comment:
+        return
+    comment = comment['body'].strip()
+    if comment == MSG_RQST_MERGE:
         owner = payload.get('repository')['owner']['login']
         repo = payload.get('repository')['name']
         pull_request = payload.get('issue')['html_url']
@@ -29,8 +35,13 @@ def lambda_handler(event, context):
         pulls_url = payload['repository']['pulls_url']
         # pull_info: https://developer.github.com/v3/pulls/#get-a-single-pull-request
         pull_info = get_pull_info(pulls_url, pull)
+        pull_request_state = pull_info['state']
+
+        if pull_request_state in ('closed', 'merged'):
+            logger.debug('State of pull request: %s ', pull_request_state)
+            return
+
         branch_origin = pull_info['head']['ref']
-        branch_upstream = pull_info['base']['ref']
         username = payload.get('comment')['user']['login']
         headers = {
             'Authorization': 'token %s' % GITHUB_TOKEN,
@@ -38,18 +49,86 @@ def lambda_handler(event, context):
             'User-Agent': 'aws lambda handler'
         }
         if username in USERNAMES.split(","):
-            # Merging: https://developer.github.com/v3/repos/merging
-            make_merge_pr(owner, repo, pull_number, headers)
-            # Comments: https://developer.github.com/v3/issues/comments/
-            approve_comment = 'Approved by @%s' % username
-            make_issue_comment(owner, repo, pull_number, headers, approve_comment)
+            status = get_status_pr(owner, repo, branch_origin)
+            ifttt_handler(status, pull_info)
+            # Merge a pull request (Merge Button): https://developer.github.com/v3/pulls/
+            if make_merge_pr(owner, repo, pull_number, headers):
+                # Comments: https://developer.github.com/v3/issues/comments/
+                approve_comment = 'Approved by @%s' % username
+                make_issue_comment(owner, repo, pull_number, headers, approve_comment)
+            else:
+                approve_comment = '@%s, could not create Merge. Maybe it\'s a conflict' % username
+                make_issue_comment(owner, repo, pull_number, headers, approve_comment)
         else:
             approve_comment = 'Sorry @%s, but you don\'t have access to merge it' % username
             make_issue_comment(owner, repo, pull_number, headers, approve_comment)
     else:
         logger.debug('Comment: %s ', comment)
-    if not comment:
+
+
+def get_status_pr(owner, repo, branch_origin):
+    # GET /repos/:owner/:repo/commits/:ref/status
+    url = 'https://api.github.com/repos/%s/%s/commits/%s/status' % (owner, repo, branch_origin)
+    http = urllib3.PoolManager()
+    res = http.request('GET', url, headers={
+        # 'Content-Type': 'application/vnd.github.v3.raw+json',
+        'User-Agent': 'aws lambda handler',
+        'Accept': 'application/vnd.github.antiope-preview+json',
+        'Authorization': 'token %s' % GITHUB_TOKEN,
+    })
+    res = json.loads(res.data)
+    logger.debug("Status pull request: \n%s", json.dumps(res))
+    return res
+
+
+def ifttt_handler(status, pull_info):
+    login = pull_info['user']['login']
+    pr_html_url = pull_info.get('html_url')
+    state = status['state']
+    logger.debug('State of pull request: %s ', state)
+    if state == 'pending':
+        # not finished yet
+        msg_not_finish = 'This PR was merge without waiting for tests'
+        logger.debug('Msg_not_finish: %s ', msg_not_finish)
+        notify_ifttt(
+            IFTTT_HOOK_NOT_FINISHED_PR,
+            value1=login,
+            value2=pr_html_url,
+            value3=msg_not_finish
+        )
         return
+    elif state in ('failure', 'error'):
+        msg_for_red_tests = 'This PR was merge with a red tests'
+        notify_ifttt(
+            IFTTT_HOOK_RED_PR,
+            value1=login,
+            value2=pr_html_url,
+            value3=msg_for_red_tests
+        )
+        return
+    else:
+        # successful
+        msg_for_green_tests = 'This PR was merge with a green tests'
+        notify_ifttt(
+            IFTTT_HOOK_GREEN_PR,
+            value1=login,
+            value2=pr_html_url,
+            value3=msg_for_green_tests
+        )
+        return
+
+
+def notify_ifttt(hook, **data):
+    logger.debug("notify_ifttt: %s", data)
+    http = urllib3.PoolManager()
+    res = http.request(
+        'POST', hook,
+        body=json.dumps(data),
+        headers={
+            'Content-Type': 'application/json',
+            'User-Agent': 'aws lambda handler',
+        })
+    return res
 
 
 def get_pull_info(pulls_url, pull):

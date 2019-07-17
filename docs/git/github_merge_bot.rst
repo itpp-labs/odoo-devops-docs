@@ -4,6 +4,13 @@
 
 The script gives the right to a certain circle of people to merge branches in the repository by sending the certain comment in the pull request.
 
+Prepare IFTTT's hooks
+---------------------
+
+* Log in / Sign up at https://ifttt.com/
+* Click on ``Documentation`` button here: https://ifttt.com/maker_webhooks
+* Replace ``{event}`` with event name, for example ``travis-not-finished-pr``, ``travis-success-pr`` and ``travis-failed-pr``. Save the links you got.
+
 Create AWS Lambda function
 --------------------------
 
@@ -19,6 +26,7 @@ Create AWS Lambda function
   * ``USERNAMES`` -- use comma-separated list of Github's usernames without @.
   * ``LOG_LEVEL`` -- optional. Set to DEBUG to get detailed logs in AWS CloudWatch.
   * ``MSG_RQST_MERGE`` -- message-request for merge. Default: ``I approve to merge it now``
+  * ``IFTTT_HOOK_RED_PR``, ``IFTTT_HOOK_GREEN_PR``, ``IFTTT_HOOK_NOT_FINISHED_PR`` -- use IFTTT's hooks
 
 * Trigger
 
@@ -35,9 +43,23 @@ Create AWS Lambda function
 
   * Copy-paste this code: https://gitlab.com/itpp/odoo-devops/raw/master/tools/github-merge-bot/lambda_function.py
 
-* Logs
+Create IFTTT applets
+--------------------
 
-  AWS CloudWatch: https://console.aws.amazon.com/cloudwatch . Choice tab ``Logs``
+* **If** -- Service *Webhooks*.
 
+  Use ``{event}`` from ``Prepare IFTTT's hooks`` of this instruction. For example: ``Event Name`` = ``travis-not-finished-pr``, ``Event Name`` = ``travis-failed-pr``.
+
+* **Then** -- whatever you like. For actions with text ingredients use following for failed, success and not finished checks:
+
+  * ``Value1`` -- Author of the pull-request
+  * ``Value2`` -- Link to pull-request
+  * ``Value3`` -- Message about it
+
+Logs
+----
+
+* AWS CloudWatch: https://console.aws.amazon.com/cloudwatch . Choice tab ``Logs``
+* IFTTT logs: https://ifttt.com/activity
 
 
