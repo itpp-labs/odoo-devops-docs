@@ -53,12 +53,13 @@ def lambda_handler(event, context):
             repo_head = pull_info['head']['repo']['name']
             status = get_status_pr(owner_head, repo_head, branch_origin)
             # Merge a pull request (Merge Button): https://developer.github.com/v3/pulls/
-            if make_merge_pr(owner, repo, pull_number, headers) == 200:
+            merge = make_merge_pr(owner, repo, pull_number, headers)
+            if merge == 200:
                 # Comments: https://developer.github.com/v3/issues/comments/
                 approve_comment = 'Approved by @%s' % username
                 make_issue_comment(owner, repo, pull_number, headers, approve_comment)
                 ifttt_handler(status, pull_info)
-            elif make_merge_pr(owner, repo, pull_number, headers) == 404:
+            elif merge == 404:
                 approve_comment = 'Sorry @%s, I don\'t have access rights to push to this repository' % username
                 make_issue_comment(owner, repo, pull_number, headers, approve_comment)
             else:
