@@ -52,14 +52,18 @@ def lambda_handler(event, context):
             owner_head = pull_info['head']['user']['login']
             repo_head = pull_info['head']['repo']['name']
             status = get_status_pr(owner_head, repo_head, branch_origin)
-            ifttt_handler(status, pull_info)
             # Merge a pull request (Merge Button): https://developer.github.com/v3/pulls/
-            if make_merge_pr(owner, repo, pull_number, headers):
+            merge = make_merge_pr(owner, repo, pull_number, headers)
+            if merge == 200:
                 # Comments: https://developer.github.com/v3/issues/comments/
                 approve_comment = 'Approved by @%s' % username
                 make_issue_comment(owner, repo, pull_number, headers, approve_comment)
+                ifttt_handler(status, pull_info)
+            elif merge == 404:
+                approve_comment = 'Sorry @%s, I don\'t have access rights to push to this repository' % username
+                make_issue_comment(owner, repo, pull_number, headers, approve_comment)
             else:
-                approve_comment = '@%s, could not create Merge. Maybe it\'s a conflict' % username
+                approve_comment = '@%s. Merge is not successful. See logs' % username
                 make_issue_comment(owner, repo, pull_number, headers, approve_comment)
         else:
             approve_comment = 'Sorry @%s, but you don\'t have access to merge it' % username
@@ -152,10 +156,10 @@ def make_merge_pr(owner, repo, pull_number, headers):
     response = requests.request("PUT", url, headers=headers)
     if response.status_code == 200:
         logger.debug('Pull Request %s successfully merged', pull_number)
-        return True
+        return response.status_code
     else:
         logger.debug('Response: "%s"', response.content)
-        return False
+        return response.status_code
 
 
 def make_issue_comment(owner, repo, pull_number, headers, approve_comment=None):
