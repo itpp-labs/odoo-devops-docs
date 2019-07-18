@@ -63,7 +63,7 @@ def lambda_handler(event, context):
                 approve_comment = 'Sorry @%s, I don\'t have access rights to push to this repository' % username
                 make_issue_comment(owner, repo, pull_number, headers, approve_comment)
             else:
-                approve_comment = '@%s, merge can not create. See logs' % username
+                approve_comment = '@%s. Merge is not successful. See logs' % username
                 make_issue_comment(owner, repo, pull_number, headers, approve_comment)
         else:
             approve_comment = 'Sorry @%s, but you don\'t have access to merge it' % username
