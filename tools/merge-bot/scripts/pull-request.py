@@ -27,6 +27,11 @@ def main():
     forked_user = args.forked_user
     head_branch = args.head_branch
 
+    pull_request(github_login, github_password, github_token, base_repo_name, base_branch, forked_user, head_branch)
+
+
+def pull_request(github_login, github_password, github_token, base_repo_name, base_branch, forked_user, head_branch):
+
     if github_login is not None and github_password is not None:
         github = Github(github_login, github_password)
     elif github_token is not None:

@@ -1,3 +1,5 @@
+"""Script for ec2 instance to run."""
+
 import json
 import boto3
 from subprocess import Popen, call
@@ -8,6 +10,13 @@ import io
 
 
 def write_in_log(log_message):
+    """
+    Writes log messages to log file.
+
+    :param log_message:
+        Text of the message.
+    """
+
     now = datetime.datetime.now()
     if not os.path.isdir('logs-github-bot/'):
         os.mkdir('logs-github-bot/')
@@ -16,6 +25,13 @@ def write_in_log(log_message):
 
 
 def write_message(message):
+    """
+    Writes message from queue to logs.
+
+    :param message:
+        Text of the message.
+    """
+
     now = datetime.datetime.now()
     message_num = 1
     if not os.path.isdir('logs-github-bot/messages'):
@@ -27,18 +43,83 @@ def write_message(message):
         file.write(message)
 
 
-def download_repository(path, url):
-    call(['git', 'clone', url, path])
-
-
 def update_repository(path):
+    """
+    Updates repo in specified path.
+
+    :param path:
+        Path of folder where repo is located.
+
+    """
+
     call(['git', '-C', path, 'fetch', '--all'])
     call(['git', '-C', path, 'reset', '--hard', 'origin'])
 
 
 def update_bot():
+    """
+    Updates bot itself.
+    """
+
     call(['git', '-C', 'odoo-devops', 'fetch', '--all'])
     call(['git', '-C', 'odoo-devops', 'reset', '--hard', 'origin'])
+
+
+def process_message(msg_body, required_fields, github_token):
+    """
+    Processes message.
+
+    :param msg_body:
+        Message to process in dictionary format.
+    :param required_fields:
+        Fields witch must be in message body to process it.
+    :return:
+        If message is processed correctly returns True.
+    """
+
+    successful = False
+
+    if all(fld in msg_body for fld in required_fields):
+        full_repo_name = msg_body['repository']['full_name']
+        repo_name = msg_body['repository']['name']
+
+        repo_path = 'repositories/{}'.format(repo_name)
+        pr_number = msg_body['number']
+        action = msg_body['action']
+        merged = msg_body['pull_request']['merged']
+
+        if action == 'closed' and merged:
+
+            Popen(['python', 'odoo-devops/tools/merge-bot/scripts/fork.py',
+                   full_repo_name, '--github_token', github_token])
+
+            if os.path.isdir(repo_path):
+                update_repository(repo_path)
+            else:
+                Popen(['python', 'odoo-devops/tools/merge-bot/scripts/fork.py',
+                       repo_name, repo_path, '--github_token', github_token])
+
+            os.chdir(repo_path)
+
+            Popen(['python', 'odoo-devops/tools/merge-bot/scripts/merge.py',
+                   full_repo_name, str(pr_number), '--github_token', github_token])
+
+            os.chdir('~/')
+
+        else:
+            write_in_log('action is {}, pull request not merged'.format(action))
+
+        successful = True
+
+    else:
+        absent_fields = ''
+        for field in required_fields:
+            if 'field' not in msg_body:
+                absent_fields += '{}, '.format(field)
+        absent_fields = absent_fields[:-2]
+        write_in_log('wrong message format. Fields {} not found'.format(absent_fields))
+
+    return successful
 
 
 def main():
@@ -68,42 +149,17 @@ def main():
     write_in_log('{} messages received from SQS'.format(len(messages)))
 
     for message in messages:
-        write_message(message.body)
-
-        body = json.loads(message.body)
-
+        msg_body = json.loads(message.body)
         required_fields = ['action', 'number', 'repository']
 
-        if all(field in body for field in required_fields):
-            if body['action'] == 'opened':
-                Popen(['python', 'odoo-devops/tools/merge-bot/scripts/review.py',
-                       body['repository']['full_name'], str(body['number']), '--github_token', github_token])
+        write_message(msg_body)
+        successful = process_message(msg_body, required_fields, github_token)
 
-                write_in_log('review-script is running for pull request '
-                             '{} in repository: {}'.format(body['number'], body['repository']['full_name']))
-
-                repo_path = 'repositories/{}'.format(body['repository']['full_name'])
-
-                if os.path.isdir(repo_path):
-                    update_repository(repo_path)
-                else:
-                    download_repository(repo_path, body['repository']['clone_url'])
-
-            else:
-                write_in_log('pull request is {}, not opened'.format(body['action']))
-
+        if successful:
             Popen(['sudo', 'shutdown', '-c'])
             Popen(['sudo', 'shutdown', '-h', '+{}'.format(shutdown_time)])
 
             write_in_log('shutdown is initiated in {} minutes'.format(shutdown_time))
-
-        else:
-            absent_fields = ''
-            for field in required_fields:
-                if 'field' not in body:
-                    absent_fields += '{}, '.format(field)
-            absent_fields = absent_fields[:-2]
-            write_in_log('wrong message format. Fields {} not found'.format(absent_fields))
 
         queue.delete_messages(Entries=[{
             'Id': message.message_id,

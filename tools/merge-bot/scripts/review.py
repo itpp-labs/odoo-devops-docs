@@ -23,6 +23,10 @@ def main():
     repo_name = args.repo_name
     pr_number = args.pr_number
 
+    make_review(github_login, github_password, github_token, repo_name, pr_number)
+
+
+def make_review(github_login, github_password, github_token, repo_name, pr_number):
     if github_login is not None and github_password is not None:
         github = Github(github_login, github_password)
     elif github_token is not None:

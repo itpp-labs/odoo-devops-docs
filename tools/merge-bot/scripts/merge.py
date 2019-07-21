@@ -1,6 +1,5 @@
 #!/usr/bin/python
 import os
-import sys
 from subprocess import Popen, PIPE, call
 import argparse
 
@@ -31,6 +30,10 @@ def main():
     in_branch = args.in_branch
     new_branch_name = args.new_branch_name
 
+    merge_branches(upstream_remote, origin_remote, auto_resolve, auto_push, from_branch, in_branch, new_branch_name)
+
+
+def merge_branches(upstream_remote, origin_remote, auto_resolve, auto_push, from_branch, in_branch, new_branch_name):
     fetch(upstream_remote)
     call(['git', 'checkout', upstream_remote + '/' + in_branch])
     if new_branch_name is None:
@@ -71,80 +74,6 @@ def main():
     if auto_push:
         push_with_upstream(origin_remote, new_branch_name)
         print(str(new_branch_name), 'pushed to', origin_remote)
-
-
-def clone_repo(url):
-    call(['git', 'clone', url])
-
-
-def get_repo_name():
-    proc = Popen(['basename', "'git rev-parse --show-toplevel'"], stdout=PIPE, stderr=PIPE)
-    return proc.communicate()[0]
-
-
-def get_remote_name(name):
-    proc = Popen(['git', 'remote' 'get-url', name], stdout=PIPE, stderr=PIPE)
-    return proc.communicate().split(':')[-1].split('/')[0]
-
-
-def fetch(remote):
-    call(['git', 'fetch', remote])
-
-
-def push_with_upstream(remote, branch):
-    call(['git', 'push', '--set-upstream', remote, branch])
-
-
-def commit_file(file_name, message):
-    call(['git', 'commit', file_name, '-m', message])
-
-
-def commit_all(message):
-    call(['git', 'commit', '-a', '-m', message])
-
-
-def branch_exists(branch_name):
-    proc = Popen(['git', 'branch', '--list', branch_name], stdout=PIPE, stderr=PIPE)
-    str = proc.communicate()[0].decode("utf-8")
-    print(str)
-    print('Branch exist' if str else 'Branch does not exist')
-    return True if str else False
-
-
-def branch_delete(branch_name):
-    call(['git', 'branch', '-D', branch_name])
-
-
-def merge(branch):
-    with open(os.devnull, 'w') as devnull:
-        call(['git', 'merge', branch], stdout=devnull)
-    proc = Popen(['git', 'diff', '--name-only', '--diff-filter=U'], stdout=PIPE, stderr=PIPE)
-    return proc.communicate()[0].decode("utf-8").split('\n')[:-1]
-
-
-def diff():
-    proc = Popen(['git', 'diff'], stdout=PIPE, stderr=PIPE)
-    return proc.communicate()[0]
-
-
-def abort_merge():
-    with open(os.devnull, 'w') as devnull:
-        call(['git', 'merge', '--abort'], stdout=devnull)
-
-
-def get_commits():
-    proc = Popen(['git', 'log', '--pretty=format:%H'], stdout=PIPE, stderr=PIPE)
-    return proc.communicate()[0].decode("utf-8").split('\n')[0:-1]
-
-
-def get_last_commit_on_branch(branch_name):
-    proc = Popen(['git', 'log', '--format=%H', branch_name], stdout=PIPE, stderr=PIPE)
-    return proc.communicate()[0].decode("utf-8").split('\n')[0]
-
-
-def reset_to_commit(commit):
-    with open(os.devnull, 'w') as devnull:
-        call(['git', 'reset', '--hard', commit], stdout=devnull)
 
 
 def find_resolvable_conflicts():
@@ -245,6 +174,71 @@ def solve_conflict(conflict):
         file.writelines(data)
 
     print(conflict['file'], 'conflict solved')
+
+
+def get_remote_name(name):
+    proc = Popen(['git', 'remote' 'get-url', name], stdout=PIPE, stderr=PIPE)
+    return proc.communicate().split(':')[-1].split('/')[0]
+
+
+def fetch(remote):
+    call(['git', 'fetch', remote])
+
+
+def push_with_upstream(remote, branch):
+    call(['git', 'push', '--set-upstream', remote, branch])
+
+
+def commit_file(file_name, message):
+    call(['git', 'commit', file_name, '-m', message])
+
+
+def commit_all(message):
+    call(['git', 'commit', '-a', '-m', message])
+
+
+def branch_exists(branch_name):
+    proc = Popen(['git', 'branch', '--list', branch_name], stdout=PIPE, stderr=PIPE)
+    str = proc.communicate()[0].decode("utf-8")
+    print(str)
+    print('Branch exist' if str else 'Branch does not exist')
+    return True if str else False
+
+
+def branch_delete(branch_name):
+    call(['git', 'branch', '-D', branch_name])
+
+
+def merge(branch):
+    with open(os.devnull, 'w') as devnull:
+        call(['git', 'merge', branch], stdout=devnull)
+    proc = Popen(['git', 'diff', '--name-only', '--diff-filter=U'], stdout=PIPE, stderr=PIPE)
+    return proc.communicate()[0].decode("utf-8").split('\n')[:-1]
+
+
+def diff():
+    proc = Popen(['git', 'diff'], stdout=PIPE, stderr=PIPE)
+    return proc.communicate()[0]
+
+
+def abort_merge():
+    with open(os.devnull, 'w') as devnull:
+        call(['git', 'merge', '--abort'], stdout=devnull)
+
+
+def get_commits():
+    proc = Popen(['git', 'log', '--pretty=format:%H'], stdout=PIPE, stderr=PIPE)
+    return proc.communicate()[0].decode("utf-8").split('\n')[0:-1]
+
+
+def get_last_commit_on_branch(branch_name):
+    proc = Popen(['git', 'log', '--format=%H', branch_name], stdout=PIPE, stderr=PIPE)
+    return proc.communicate()[0].decode("utf-8").split('\n')[0]
+
+
+def reset_to_commit(commit):
+    with open(os.devnull, 'w') as devnull:
+        call(['git', 'reset', '--hard', commit], stdout=devnull)
 
 
 if __name__ == "__main__":
