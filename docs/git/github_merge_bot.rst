@@ -43,6 +43,10 @@ Create AWS Lambda function
 
   * Copy-paste this code: https://gitlab.com/itpp/odoo-devops/raw/master/tools/github-merge-bot/lambda_function.py
 
+* Basic settings
+
+  * Change time running function by 15 sec -- ``Timeout`` (default 3 sec)
+
 Create IFTTT applets
 --------------------
 
