@@ -152,7 +152,7 @@ def main():
         msg_body = json.loads(message.body)
         required_fields = ['action', 'number', 'repository']
 
-        write_message(msg_body)
+        write_message(message.body)
         successful = process_message(msg_body, required_fields, github_token)
 
         if successful:

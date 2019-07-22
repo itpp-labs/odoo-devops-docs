@@ -165,7 +165,7 @@ def create_ec2_instance(instance_profile_name, instance_profile_arn, key_name, u
             'Enabled': False
         },
         SecurityGroupIds=[
-            'sg-00f3b71d4b6021b03',
+            'sg-ad82ddc1',
         ]
     )
     time.sleep(30)
@@ -277,7 +277,7 @@ def create_instance_profile(profile_name, role_name):
     iam = boto3.resource('iam')
 
     response = iam_client.create_instance_profile(
-        InstanceProfileName=profile_name,
+            InstanceProfileName=profile_name,
         Path='/'
     )
 
