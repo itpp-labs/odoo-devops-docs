@@ -51,6 +51,7 @@ def lambda_handler(event, context):
         if username in USERNAMES.split(","):
             owner_head = pull_info['head']['user']['login']
             repo_head = pull_info['head']['repo']['name']
+            status = get_status_pr(owner_head, repo_head, branch_origin)
             check_runs = get_status_check_run(owner_head, repo_head, branch_origin).get('check_runs')
             for check_run in check_runs:
                 pull_requests = check_run.get('pull_requests')
@@ -65,7 +66,7 @@ def lambda_handler(event, context):
                             # Comments: https://developer.github.com/v3/issues/comments/
                             approve_comment = 'Approved by @%s' % username
                             make_issue_comment(owner, repo, pull_number, headers, approve_comment)
-                            ifttt_handler(check_run, pull_info)
+                            ifttt_handler(check_run, status, pull_info)
                         elif merge == 404:
                             approve_comment = 'Sorry @%s, I don\'t have access rights to push to this repository' % username
                             make_issue_comment(owner, repo, pull_number, headers, approve_comment)
@@ -94,15 +95,31 @@ def get_status_check_run(owner_head, repo_head, branch_origin):
     return res
 
 
-def ifttt_handler(check_run, pull_info):
+def get_status_pr(owner_head, repo_head, branch_origin):
+    # GET /repos/:owner/:repo/commits/:ref/status
+    url = 'https://api.github.com/repos/%s/%s/commits/%s/status' % (owner_head, repo_head, branch_origin)
+    http = urllib3.PoolManager()
+    res = http.request('GET', url, headers={
+        # 'Content-Type': 'application/vnd.github.v3.raw+json',
+        'User-Agent': 'aws lambda handler',
+        'Accept': 'application/vnd.github.antiope-preview+json',
+        'Authorization': 'token %s' % GITHUB_TOKEN,
+    })
+    res = json.loads(res.data)
+    logger.debug("Status pull request: \n%s", json.dumps(res))
+    return res
+
+
+def ifttt_handler(check_run, status, pull_info):
     login = pull_info['user']['login']
     pr_html_url = pull_info.get('html_url')
-    status = check_run.get('status')
-    logger.debug('Status of pull request: %s ', status)
-    if status == 'completed':
+    status_check_run = check_run.get('status')
+    state = status['state']
+    logger.debug('Status of pull request: %s ', status_check_run)
+    if status_check_run == 'completed':
         conclusion = check_run.get('conclusion')
         logger.debug('Conclusion of pull request: %s ', conclusion)
-        if conclusion in ('failure', 'neutral', 'cancelled', 'timed_out', 'action_required'):
+        if conclusion in ('failure', 'neutral', 'cancelled', 'timed_out', 'action_required') or state == 'failure':
             msg_for_red_tests = 'This PR was merge with a red tests'
             notify_ifttt(
                 IFTTT_HOOK_RED_PR,
@@ -111,7 +128,7 @@ def ifttt_handler(check_run, pull_info):
                 value3=msg_for_red_tests
             )
             return
-        else:
+        elif state == 'success':
             # successful
             msg_for_green_tests = 'This PR was merge with a green tests'
             notify_ifttt(
@@ -122,7 +139,7 @@ def ifttt_handler(check_run, pull_info):
             )
             return
 
-    elif status in ('queued', 'in_progress'):
+    elif status_check_run in ('queued', 'in_progress') or state == 'pending':
         # not finished yet
         msg_not_finish = 'This PR was merge without waiting for tests'
         logger.debug('Msg_not_finish: %s ', msg_not_finish)
