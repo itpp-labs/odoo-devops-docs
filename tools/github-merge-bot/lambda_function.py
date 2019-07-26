@@ -49,30 +49,36 @@ def lambda_handler(event, context):
             'User-Agent': 'aws lambda handler'
         }
         if username in USERNAMES.split(","):
+            sha_head = pull_info['head']['sha']
             owner_head = pull_info['head']['user']['login']
+            owner_base = pull_info['base']['user']['login']
             repo_head = pull_info['head']['repo']['name']
-            status = get_status_pr(owner_head, repo_head, branch_origin)
+            status = get_status_pr(owner_base, repo_head, sha_head)
             check_runs = get_status_check_run(owner_head, repo_head, branch_origin).get('check_runs')
+            statuses_check_run = []
+            conclusions_check_run = []
             for check_run in check_runs:
                 pull_requests = check_run.get('pull_requests')
                 for pull_request in pull_requests:
                     pull_number_by_check_run = pull_request.get('number')
                     if str(pull_number_by_check_run) == pull_number:
-                        status_by_check_run = check_run.get('status')
-                        logger.debug('status_by_check_run: %s ', status_by_check_run)
-                        # Merge a pull request (Merge Button): https://developer.github.com/v3/pulls/
-                        merge = make_merge_pr(owner, repo, pull_number, headers)
-                        if merge == 200:
-                            # Comments: https://developer.github.com/v3/issues/comments/
-                            approve_comment = 'Approved by @%s' % username
-                            make_issue_comment(owner, repo, pull_number, headers, approve_comment)
-                            ifttt_handler(check_run, status, pull_info)
-                        elif merge == 404:
-                            approve_comment = 'Sorry @%s, I don\'t have access rights to push to this repository' % username
-                            make_issue_comment(owner, repo, pull_number, headers, approve_comment)
-                        else:
-                            approve_comment = '@%s. Merge is not successful. See logs' % username
-                            make_issue_comment(owner, repo, pull_number, headers, approve_comment)
+                        statuses_check_run.append(check_run.get('status'))
+                        conclusions_check_run.append(check_run.get('conclusion'))
+            logger.debug('List of conclusions_check_run: %s ', conclusions_check_run)
+            logger.debug('List of statuses_check_run: %s ', statuses_check_run)        
+            # Merge a pull request (Merge Button): https://developer.github.com/v3/pulls/
+            merge = make_merge_pr(owner, repo, pull_number, headers)
+            if merge == 200:
+                # Comments: https://developer.github.com/v3/issues/comments/
+                approve_comment = 'Approved by @%s' % username
+                make_issue_comment(owner, repo, pull_number, headers, approve_comment)
+                ifttt_handler(statuses_check_run, conclusions_check_run, status, pull_info)
+            elif merge == 404:
+                approve_comment = 'Sorry @%s, I don\'t have access rights to push to this repository' % username
+                make_issue_comment(owner, repo, pull_number, headers, approve_comment)
+            else:
+                approve_comment = '@%s. Merge is not successful. See logs' % username
+                make_issue_comment(owner, repo, pull_number, headers, approve_comment)
         else:
             approve_comment = 'Sorry @%s, but you don\'t have access to merge it' % username
             make_issue_comment(owner, repo, pull_number, headers, approve_comment)
@@ -95,9 +101,9 @@ def get_status_check_run(owner_head, repo_head, branch_origin):
     return res
 
 
-def get_status_pr(owner_head, repo_head, branch_origin):
+def get_status_pr(owner_base, repo_head, sha_head):
     # GET /repos/:owner/:repo/commits/:ref/status
-    url = 'https://api.github.com/repos/%s/%s/commits/%s/status' % (owner_head, repo_head, branch_origin)
+    url = 'https://api.github.com/repos/%s/%s/commits/%s/status' % (owner_base, repo_head, sha_head)
     http = urllib3.PoolManager()
     res = http.request('GET', url, headers={
         # 'Content-Type': 'application/vnd.github.v3.raw+json',
@@ -110,16 +116,14 @@ def get_status_pr(owner_head, repo_head, branch_origin):
     return res
 
 
-def ifttt_handler(check_run, status, pull_info):
+def ifttt_handler(statuses_check_run, conclusions_check_run, status, pull_info):
     login = pull_info['user']['login']
     pr_html_url = pull_info.get('html_url')
-    status_check_run = check_run.get('status')
     state = status['state']
-    logger.debug('Status of pull request: %s ', status_check_run)
-    if status_check_run == 'completed':
-        conclusion = check_run.get('conclusion')
-        logger.debug('Conclusion of pull request: %s ', conclusion)
-        if conclusion in ('failure', 'neutral', 'cancelled', 'timed_out', 'action_required') or state == 'failure':
+    logger.debug('State of pull request: %s ', state)
+    if statuses_check_run.count('completed') == len(statuses_check_run) and state != 'pending':
+        result = any(elem in conclusions_check_run for elem in ['failure', 'neutral', 'cancelled', 'timed_out', 'action_required'])
+        if result or state == 'failure':
             msg_for_red_tests = 'This PR was merge with a red tests'
             notify_ifttt(
                 IFTTT_HOOK_RED_PR,
@@ -138,8 +142,7 @@ def ifttt_handler(check_run, status, pull_info):
                 value3=msg_for_green_tests
             )
             return
-
-    elif status_check_run in ('queued', 'in_progress') or state == 'pending':
+    elif any(elem in statuses_check_run for elem in ['queued', 'in_progress']) or state == 'pending':
         # not finished yet
         msg_not_finish = 'This PR was merge without waiting for tests'
         logger.debug('Msg_not_finish: %s ', msg_not_finish)
