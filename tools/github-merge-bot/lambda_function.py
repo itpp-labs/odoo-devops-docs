@@ -65,14 +65,15 @@ def lambda_handler(event, context):
                         statuses_check_run.append(check_run.get('status'))
                         conclusions_check_run.append(check_run.get('conclusion'))
             logger.debug('List of conclusions_check_run: %s ', conclusions_check_run)
-            logger.debug('List of statuses_check_run: %s ', statuses_check_run)        
+            logger.debug('List of statuses_check_run: %s ', statuses_check_run)
             # Merge a pull request (Merge Button): https://developer.github.com/v3/pulls/
             merge = make_merge_pr(owner, repo, pull_number, headers)
             if merge == 200:
                 # Comments: https://developer.github.com/v3/issues/comments/
                 approve_comment = 'Approved by @%s' % username
                 make_issue_comment(owner, repo, pull_number, headers, approve_comment)
-                ifttt_handler(statuses_check_run, conclusions_check_run, status, pull_info)
+                res = status_result(statuses_check_run, conclusions_check_run, status)
+                ifttt_handler(res, pull_info)
             elif merge == 404:
                 approve_comment = 'Sorry @%s, I don\'t have access rights to push to this repository' % username
                 make_issue_comment(owner, repo, pull_number, headers, approve_comment)
@@ -115,34 +116,44 @@ def get_status_pr(owner_base, repo_head, sha_head):
     logger.debug("Status pull request: \n%s", json.dumps(res))
     return res
 
-
-def ifttt_handler(statuses_check_run, conclusions_check_run, status, pull_info):
-    login = pull_info['user']['login']
-    pr_html_url = pull_info.get('html_url')
+def status_result(statuses_check_run, conclusions_check_run, status):
     state = status['state']
-    logger.debug('State of pull request: %s ', state)
+    res = ''
     if statuses_check_run.count('completed') == len(statuses_check_run) and state != 'pending':
         result = any(elem in conclusions_check_run for elem in ['failure', 'neutral', 'cancelled', 'timed_out', 'action_required'])
         if result or state == 'failure':
-            msg_for_red_tests = 'This PR was merge with a red tests'
-            notify_ifttt(
-                IFTTT_HOOK_RED_PR,
-                value1=login,
-                value2=pr_html_url,
-                value3=msg_for_red_tests
-            )
-            return
+            res = 'red'
         elif state == 'success':
-            # successful
-            msg_for_green_tests = 'This PR was merge with a green tests'
-            notify_ifttt(
-                IFTTT_HOOK_GREEN_PR,
-                value1=login,
-                value2=pr_html_url,
-                value3=msg_for_green_tests
-            )
-            return
+            res = 'green'
     elif any(elem in statuses_check_run for elem in ['queued', 'in_progress']) or state == 'pending':
+        res = 'not_finish'
+    return res
+
+
+def ifttt_handler(res, pull_info):
+    login = pull_info['user']['login']
+    pr_html_url = pull_info.get('html_url')
+    logger.debug('Result status of pull request: %s ', res)
+    if res == 'red':
+        msg_for_red_tests = 'This PR was merge with a red tests'
+        notify_ifttt(
+            IFTTT_HOOK_RED_PR,
+            value1=login,
+            value2=pr_html_url,
+            value3=msg_for_red_tests
+        )
+        return
+    elif res == 'green':
+        # successful
+        msg_for_green_tests = 'This PR was merge with a green tests'
+        notify_ifttt(
+            IFTTT_HOOK_GREEN_PR,
+            value1=login,
+            value2=pr_html_url,
+            value3=msg_for_green_tests
+        )
+        return
+    else:
         # not finished yet
         msg_not_finish = 'This PR was merge without waiting for tests'
         logger.debug('Msg_not_finish: %s ', msg_not_finish)
