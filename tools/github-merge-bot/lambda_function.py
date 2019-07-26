@@ -52,13 +52,9 @@ def lambda_handler(event, context):
             'User-Agent': 'aws lambda handler'
         }
         if username in USERNAMES.split(","):
-            # commit SHA-1 hash of head branch repo
             sha_head = pull_info['head']['sha']
-            # name of head user
             owner_head = pull_info['head']['user']['login']
-            # name of base user
             owner_base = pull_info['base']['user']['login']
-            # name of head repo
             repo_head = pull_info['head']['repo']['name']
             state = get_status_pr(owner_base, repo_head, sha_head)['state']
             check_runs = get_status_check_run(owner_head, repo_head, branch_origin).get('check_runs')
@@ -114,6 +110,7 @@ def get_status_pr(owner_base, repo_head, sha_head):
 
 
 def status_result(check_runs, state, pull_number):
+    # get lists of statuses and conclusions check run
     statuses_check_run = []
     conclusions_check_run = []
     for check_run in check_runs:
