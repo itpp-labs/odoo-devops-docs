@@ -5,6 +5,9 @@ import re
 from botocore.vendored import requests
 from botocore.vendored.requests.packages import urllib3
 
+GREEN = 'green'
+RED = 'red'
+NOT_FINISH = 'not_finish'
 LOG_LEVEL = os.environ.get('LOG_LEVEL')
 GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
 USERNAMES = os.environ.get('USERNAMES')
@@ -49,30 +52,23 @@ def lambda_handler(event, context):
             'User-Agent': 'aws lambda handler'
         }
         if username in USERNAMES.split(","):
+            # commit SHA-1 hash of head branch repo
             sha_head = pull_info['head']['sha']
+            # name of head user
             owner_head = pull_info['head']['user']['login']
+            # name of base user
             owner_base = pull_info['base']['user']['login']
+            # name of head repo
             repo_head = pull_info['head']['repo']['name']
-            status = get_status_pr(owner_base, repo_head, sha_head)
+            state = get_status_pr(owner_base, repo_head, sha_head)['state']
             check_runs = get_status_check_run(owner_head, repo_head, branch_origin).get('check_runs')
-            statuses_check_run = []
-            conclusions_check_run = []
-            for check_run in check_runs:
-                pull_requests = check_run.get('pull_requests')
-                for pull_request in pull_requests:
-                    pull_number_by_check_run = pull_request.get('number')
-                    if str(pull_number_by_check_run) == pull_number:
-                        statuses_check_run.append(check_run.get('status'))
-                        conclusions_check_run.append(check_run.get('conclusion'))
-            logger.debug('List of conclusions_check_run: %s ', conclusions_check_run)
-            logger.debug('List of statuses_check_run: %s ', statuses_check_run)
             # Merge a pull request (Merge Button): https://developer.github.com/v3/pulls/
             merge = make_merge_pr(owner, repo, pull_number, headers)
             if merge == 200:
                 # Comments: https://developer.github.com/v3/issues/comments/
                 approve_comment = 'Approved by @%s' % username
                 make_issue_comment(owner, repo, pull_number, headers, approve_comment)
-                res = status_result(statuses_check_run, conclusions_check_run, status)
+                res = status_result(check_runs, state, pull_number)
                 ifttt_handler(res, pull_info)
             elif merge == 404:
                 approve_comment = 'Sorry @%s, I don\'t have access rights to push to this repository' % username
@@ -116,17 +112,28 @@ def get_status_pr(owner_base, repo_head, sha_head):
     logger.debug("Status pull request: \n%s", json.dumps(res))
     return res
 
-def status_result(statuses_check_run, conclusions_check_run, status):
-    state = status['state']
+
+def status_result(check_runs, state, pull_number):
+    statuses_check_run = []
+    conclusions_check_run = []
+    for check_run in check_runs:
+        pull_requests = check_run.get('pull_requests')
+        for pull_request in pull_requests:
+            pull_number_by_check_run = pull_request.get('number')
+            if str(pull_number_by_check_run) == pull_number:
+                statuses_check_run.append(check_run.get('status'))
+                conclusions_check_run.append(check_run.get('conclusion'))
+    logger.debug('List of conclusions check run: %s ', conclusions_check_run)
+    logger.debug('List of statuses check run: %s ', statuses_check_run)
     res = ''
-    if statuses_check_run.count('completed') == len(statuses_check_run) and state != 'pending':
+    if all(['completed' for s in statuses_check_run]) and state != 'pending':
         result = any(elem in conclusions_check_run for elem in ['failure', 'neutral', 'cancelled', 'timed_out', 'action_required'])
         if result or state == 'failure':
-            res = 'red'
+            res = RED
         elif state == 'success':
-            res = 'green'
+            res = GREEN
     elif any(elem in statuses_check_run for elem in ['queued', 'in_progress']) or state == 'pending':
-        res = 'not_finish'
+        res = NOT_FINISH
     return res
 
 
@@ -134,7 +141,7 @@ def ifttt_handler(res, pull_info):
     login = pull_info['user']['login']
     pr_html_url = pull_info.get('html_url')
     logger.debug('Result status of pull request: %s ', res)
-    if res == 'red':
+    if res == RED:
         msg_for_red_tests = 'This PR was merge with a red tests'
         notify_ifttt(
             IFTTT_HOOK_RED_PR,
@@ -143,7 +150,7 @@ def ifttt_handler(res, pull_info):
             value3=msg_for_red_tests
         )
         return
-    elif res == 'green':
+    elif res == GREEN:
         # successful
         msg_for_green_tests = 'This PR was merge with a green tests'
         notify_ifttt(
