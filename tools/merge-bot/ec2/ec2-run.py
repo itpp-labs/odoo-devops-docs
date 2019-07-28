@@ -155,16 +155,16 @@ def main():
         write_message(message.body)
         successful = process_message(msg_body, required_fields, github_token)
 
-        if successful:
-            Popen(['sudo', 'shutdown', '-c'])
-            Popen(['sudo', 'shutdown', '-h', '+{}'.format(shutdown_time)])
-
-            write_in_log('shutdown is initiated in {} minutes'.format(shutdown_time))
-
         queue.delete_messages(Entries=[{
             'Id': message.message_id,
             'ReceiptHandle': message.receipt_handle
         }])
+
+    if len(messages) == 0:
+        Popen(['sudo', 'shutdown', '-c'])
+        Popen(['sudo', 'shutdown', '-h', '+{}'.format(shutdown_time)])
+
+        write_in_log('shutdown is initiated in {} minutes'.format(shutdown_time))
 
 
 if __name__ == "__main__":
