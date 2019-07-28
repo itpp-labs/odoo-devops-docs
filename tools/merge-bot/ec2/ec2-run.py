@@ -162,10 +162,14 @@ def main():
         }])
 
     if len(messages) == 0:
-        Popen(['sudo', 'shutdown', '-c'])
-        Popen(['sudo', 'shutdown', '-h', '+{}'.format(shutdown_time)])
 
+        write_in_log('shutdown is in schedule')
+    else:
+
+        Popen(['sudo', 'shutdown', '-c'])
         write_in_log('shutdown is initiated in {} minutes'.format(shutdown_time))
+
+    Popen(['sudo', 'shutdown', '-h', '+{}'.format(shutdown_time)])
 
 
 if __name__ == "__main__":
