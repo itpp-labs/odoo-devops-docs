@@ -88,6 +88,8 @@ def process_message(msg_body, required_fields, github_token):
         pr_number = msg_body['number']
         action = msg_body['action']
         merged = msg_body['pull_request']['merged']
+        base_branch = msg_body['pull_request']['base']['ref']
+        next_branch = str(int(base_branch.split('.')) + 1) + '.0'
 
         if action == 'closed' and merged:
             write_in_log('forking repo: {}'.format(full_repo_name))
@@ -107,14 +109,15 @@ def process_message(msg_body, required_fields, github_token):
                        repo_name, repo_path, '--github_token', github_token]).wait()
                 write_in_log('clone complete')
 
-            os.chdir(repo_path)
-            write_in_log('merging repo: {}'.format(full_repo_name))
+            if next_branch in ['11.0', '12.0']:
+                write_in_log('merging repo: {}'.format(full_repo_name))
+                os.chdir(repo_path)
 
-            Popen(['python', '/home/ec2-user/odoo-devops/tools/merge-bot/scripts/merge.py',
-                   full_repo_name, str(pr_number), '--github_token', github_token]).wait()
-            write_in_log('merge complete')
-
-            os.chdir('~/')
+                Popen(['python', '/home/ec2-user/odoo-devops/tools/merge-bot/scripts/merge.py',
+                       base_branch, next_branch]).wait()
+                write_in_log('merge complete')
+            else:
+                write_in_log('merge in branch "{}" is not supported')
 
         else:
             write_in_log('action is {}, pull request not merged'.format(action))
