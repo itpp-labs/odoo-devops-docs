@@ -18,9 +18,9 @@ def write_in_log(log_message):
     """
 
     now = datetime.datetime.now()
-    if not os.path.isdir('logs-github-bot/'):
-        os.mkdir('logs-github-bot/')
-    with open('logs-github-bot/{}.txt'.format(now.strftime('%Y-%m-%d')), 'a') as logfile:
+    if not os.path.isdir('/home/ec2-user/logs-github-bot/'):
+        os.mkdir('/home/ec2-user/logs-github-bot/')
+    with open('/home/ec2-user/logs-github-bot/{}.txt'.format(now.strftime('%Y-%m-%d')), 'a') as logfile:
         logfile.write('{} {}\n'.format(now.strftime('%Y-%m-%d %H:%M:%S'), log_message))
 
 
@@ -34,11 +34,12 @@ def write_message(message):
 
     now = datetime.datetime.now()
     message_num = 1
-    if not os.path.isdir('logs-github-bot/messages'):
-        os.mkdir('logs-github-bot/messages')
-    while os.path.isfile('logs-github-bot/messages/{}-{}.txt'.format(now.strftime('%Y-%m-%d'), message_num)):
+    if not os.path.isdir('/home/ec2-user/logs-github-bot/messages'):
+        os.mkdir('/home/ec2-user/logs-github-bot/messages')
+    while os.path.isfile('/home/ec2-user/logs-github-bot/messages/{}-{}.txt'.format(now.strftime('%Y-%m-%d'),
+                                                                                    message_num)):
         message_num += 1
-    with io.open('logs-github-bot/messages/{}-{}.txt'.format(now.strftime('%Y-%m-%d'), message_num),
+    with io.open('/home/ec2-user/logs-github-bot/messages/{}-{}.txt'.format(now.strftime('%Y-%m-%d'), message_num),
                  'w', encoding="utf-8") as file:
         file.write(message)
 
@@ -90,18 +91,18 @@ def process_message(msg_body, required_fields, github_token):
 
         if action == 'closed' and merged:
 
-            Popen(['python', 'odoo-devops/tools/merge-bot/scripts/fork.py',
+            Popen(['python', '/home/ec2-user/odoo-devops/tools/merge-bot/scripts/fork.py',
                    full_repo_name, '--github_token', github_token])
 
             if os.path.isdir(repo_path):
                 update_repository(repo_path)
             else:
-                Popen(['python', 'odoo-devops/tools/merge-bot/scripts/fork.py',
+                Popen(['python', '/home/ec2-user/odoo-devops/tools/merge-bot/scripts/fork.py',
                        repo_name, repo_path, '--github_token', github_token])
 
             os.chdir(repo_path)
 
-            Popen(['python', 'odoo-devops/tools/merge-bot/scripts/merge.py',
+            Popen(['python', '/home/ec2-user/odoo-devops/tools/merge-bot/scripts/merge.py',
                    full_repo_name, str(pr_number), '--github_token', github_token])
 
             os.chdir('~/')
