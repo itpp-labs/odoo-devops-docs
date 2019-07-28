@@ -84,26 +84,35 @@ def process_message(msg_body, required_fields, github_token):
         full_repo_name = msg_body['repository']['full_name']
         repo_name = msg_body['repository']['name']
 
-        repo_path = 'repositories/{}'.format(repo_name)
+        repo_path = '/home/ec2-user/repositories/{}'.format(repo_name)
         pr_number = msg_body['number']
         action = msg_body['action']
         merged = msg_body['pull_request']['merged']
 
         if action == 'closed' and merged:
+            write_in_log('forking repo: {}'.format(full_repo_name))
 
             Popen(['python', '/home/ec2-user/odoo-devops/tools/merge-bot/scripts/fork.py',
                    full_repo_name, '--github_token', github_token])
+            write_in_log('fork complete')
 
             if os.path.isdir(repo_path):
+                write_in_log('updating repo in {}'.format(repo_path))
                 update_repository(repo_path)
+                write_in_log('update complete')
+
             else:
-                Popen(['python', '/home/ec2-user/odoo-devops/tools/merge-bot/scripts/fork.py',
+                write_in_log('cloning fork repo in {}'.format(repo_path))
+                Popen(['python', '/home/ec2-user/odoo-devops/tools/merge-bot/scripts/clone_fork.py',
                        repo_name, repo_path, '--github_token', github_token])
+                write_in_log('clone complete')
 
             os.chdir(repo_path)
+            write_in_log('merging repo: {}'.format(full_repo_name))
 
             Popen(['python', '/home/ec2-user/odoo-devops/tools/merge-bot/scripts/merge.py',
                    full_repo_name, str(pr_number), '--github_token', github_token])
+            write_in_log('merge complete')
 
             os.chdir('~/')
 
