@@ -69,7 +69,7 @@ def lambda_handler(event, context):
                 approve_comment = 'Approved by @%s' % username
                 make_issue_comment(owner, repo, pull_number, headers, approve_comment)
                 res = status_result(check_runs, status_state, pull_number)
-                ifttt_handler(res, pull_info)
+                ifttt_handler(res, pull_info, username)
             elif merge == 404:
                 approve_comment = 'Sorry @%s, I don\'t have access rights to push to this repository' % username
                 make_issue_comment(owner, repo, pull_number, headers, approve_comment)
@@ -137,14 +137,13 @@ def status_result(check_runs, status_state, pull_number):
         return GREEN
 
 
-def ifttt_handler(res, pull_info):
-    login = pull_info['user']['login']
+def ifttt_handler(res, pull_info, username):
     pr_html_url = pull_info.get('html_url')
     if res == RED:
         msg_for_red_tests = 'This PR was merged with a red tests'
         notify_ifttt(
             IFTTT_HOOK_RED_PR,
-            value1=login,
+            value1=username,
             value2=pr_html_url,
             value3=msg_for_red_tests
         )
@@ -154,7 +153,7 @@ def ifttt_handler(res, pull_info):
         msg_for_green_tests = 'This PR was merged with a green tests'
         notify_ifttt(
             IFTTT_HOOK_GREEN_PR,
-            value1=login,
+            value1=username,
             value2=pr_html_url,
             value3=msg_for_green_tests
         )
@@ -165,7 +164,7 @@ def ifttt_handler(res, pull_info):
         logger.debug('Msg_not_finish: %s ', msg_not_finish)
         notify_ifttt(
             IFTTT_HOOK_NOT_FINISHED_PR,
-            value1=login,
+            value1=username,
             value2=pr_html_url,
             value3=msg_not_finish
         )
