@@ -5,9 +5,12 @@ import re
 from botocore.vendored import requests
 from botocore.vendored.requests.packages import urllib3
 
-GREEN = ['success']
-RED = ['failure', 'neutral', 'cancelled', 'timed_out', 'action_required', 'error']
-NOT_FINISHED = ['queued', 'in_progress', 'pending']
+
+RED_STATUSES = ['failure', 'neutral', 'cancelled', 'timed_out', 'action_required', 'error']
+NOT_FINISHED_STATUSES = ['queued', 'in_progress', 'pending']
+GREEN = 'green'
+RED = 'red'
+NOT_FINISHED = 'not_finished'
 LOG_LEVEL = os.environ.get('LOG_LEVEL')
 GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
 USERNAMES = os.environ.get('USERNAMES')
@@ -62,17 +65,17 @@ def lambda_handler(event, context):
             # Merge a pull request (Merge Button): https://developer.github.com/v3/pulls/
             merge = make_merge_pr(owner, repo, pull_number, headers)
             if merge == 200:
-               # Comments: https://developer.github.com/v3/issues/comments/
-               approve_comment = 'Approved by @%s' % username
-               make_issue_comment(owner, repo, pull_number, headers, approve_comment)
-               res = status_result(check_runs, status_state, pull_number)
-               ifttt_handler(res, pull_info)
+                # Comments: https://developer.github.com/v3/issues/comments/
+                approve_comment = 'Approved by @%s' % username
+                make_issue_comment(owner, repo, pull_number, headers, approve_comment)
+                res = status_result(check_runs, status_state, pull_number)
+                ifttt_handler(res, pull_info)
             elif merge == 404:
-               approve_comment = 'Sorry @%s, I don\'t have access rights to push to this repository' % username
-               make_issue_comment(owner, repo, pull_number, headers, approve_comment)
+                approve_comment = 'Sorry @%s, I don\'t have access rights to push to this repository' % username
+                make_issue_comment(owner, repo, pull_number, headers, approve_comment)
             else:
-               approve_comment = '@%s. Merge is not successful. See logs' % username
-               make_issue_comment(owner, repo, pull_number, headers, approve_comment)
+                approve_comment = '@%s. Merge is not successful. See logs' % username
+                make_issue_comment(owner, repo, pull_number, headers, approve_comment)
         else:
             approve_comment = 'Sorry @%s, but you don\'t have access to merge it' % username
             make_issue_comment(owner, repo, pull_number, headers, approve_comment)
@@ -126,9 +129,9 @@ def status_result(check_runs, status_state, pull_number):
     logger.debug('List of conclusions check run: %s ', conclusions_check_run)
     states = statuses_check_run + conclusions_check_run + status_state
     logger.debug('States: %s ', states)
-    if any(elem in states for elem in RED):
+    if any(elem in states for elem in RED_STATUSES):
         return RED
-    elif any(elem in states for elem in NOT_FINISHED):
+    elif any(elem in states for elem in NOT_FINISHED_STATUSES):
         return NOT_FINISHED
     else:
         return GREEN
