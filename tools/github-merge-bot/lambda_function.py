@@ -110,7 +110,8 @@ def get_status_pr(owner_base, repo_head, sha_head):
 
 
 def status_result(check_runs, state, pull_number):
-    # get lists of statuses and conclusions check run
+    # get list of statuses check run. May be success, pending, error or failure and
+    # get list of conclusions check run. May be success, failure, neutral, cancelled, timed_out, or action_required if status of completed
     statuses_check_run = []
     conclusions_check_run = []
     for check_run in check_runs:
@@ -123,7 +124,7 @@ def status_result(check_runs, state, pull_number):
     logger.debug('List of conclusions check run: %s ', conclusions_check_run)
     logger.debug('List of statuses check run: %s ', statuses_check_run)
     res = ''
-    if all(elem in statuses_check_run for elem in ['completed']) and state != 'pending':
+    if all(elem in ['completed'] for elem in statuses_check_run ) and state != 'pending':
         result = any(elem in conclusions_check_run for elem in ['failure', 'neutral', 'cancelled', 'timed_out', 'action_required'])
         if result or state == 'failure':
             res = RED
