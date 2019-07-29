@@ -5,6 +5,12 @@ import re
 from botocore.vendored import requests
 from botocore.vendored.requests.packages import urllib3
 
+
+RED_STATUSES = ['failure', 'neutral', 'cancelled', 'timed_out', 'action_required', 'error']
+NOT_FINISHED_STATUSES = ['queued', 'in_progress', 'pending']
+GREEN = 'green'
+RED = 'red'
+NOT_FINISHED = 'not_finished'
 LOG_LEVEL = os.environ.get('LOG_LEVEL')
 GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
 USERNAMES = os.environ.get('USERNAMES')
@@ -49,16 +55,21 @@ def lambda_handler(event, context):
             'User-Agent': 'aws lambda handler'
         }
         if username in USERNAMES.split(","):
+            sha_head = pull_info['head']['sha']
             owner_head = pull_info['head']['user']['login']
+            owner_base = pull_info['base']['user']['login']
             repo_head = pull_info['head']['repo']['name']
-            status = get_status_pr(owner_head, repo_head, branch_origin)
+            status_state = [get_status_pr(owner_base, repo_head, sha_head)['state']]
+            logger.debug('status_state: %s ', status_state)
+            check_runs = get_status_check_run(owner_head, repo_head, branch_origin).get('check_runs')
             # Merge a pull request (Merge Button): https://developer.github.com/v3/pulls/
             merge = make_merge_pr(owner, repo, pull_number, headers)
             if merge == 200:
                 # Comments: https://developer.github.com/v3/issues/comments/
                 approve_comment = 'Approved by @%s' % username
                 make_issue_comment(owner, repo, pull_number, headers, approve_comment)
-                ifttt_handler(status, pull_info)
+                res = status_result(check_runs, status_state, pull_number)
+                ifttt_handler(res, pull_info)
             elif merge == 404:
                 approve_comment = 'Sorry @%s, I don\'t have access rights to push to this repository' % username
                 make_issue_comment(owner, repo, pull_number, headers, approve_comment)
@@ -72,9 +83,24 @@ def lambda_handler(event, context):
         logger.debug('Comment: %s ', comment)
 
 
-def get_status_pr(owner_head, repo_head, branch_origin):
+def get_status_check_run(owner_head, repo_head, branch_origin):
+    # GET /repos/:owner/:repo/commits/:ref/check-runs
+    url = 'https://api.github.com/repos/%s/%s/commits/%s/check-runs' % (owner_head, repo_head, branch_origin)
+    http = urllib3.PoolManager()
+    res = http.request('GET', url, headers={
+        # 'Content-Type': 'application/vnd.github.v3.raw+json',
+        'User-Agent': 'aws lambda handler',
+        'Accept': 'application/vnd.github.antiope-preview+json',
+        'Authorization': 'token %s' % GITHUB_TOKEN,
+    })
+    res = json.loads(res.data)
+    logger.debug("Status of Check runs: \n%s", json.dumps(res))
+    return res
+
+
+def get_status_pr(owner_base, repo_head, sha_head):
     # GET /repos/:owner/:repo/commits/:ref/status
-    url = 'https://api.github.com/repos/%s/%s/commits/%s/status' % (owner_head, repo_head, branch_origin)
+    url = 'https://api.github.com/repos/%s/%s/commits/%s/status' % (owner_base, repo_head, sha_head)
     http = urllib3.PoolManager()
     res = http.request('GET', url, headers={
         # 'Content-Type': 'application/vnd.github.v3.raw+json',
@@ -87,24 +113,35 @@ def get_status_pr(owner_head, repo_head, branch_origin):
     return res
 
 
-def ifttt_handler(status, pull_info):
+def status_result(check_runs, status_state, pull_number):
+    # get list of statuses check run. May be queued, in_progress or completed. And
+    # get list of conclusions check run. May be success, failure, neutral, cancelled, timed_out, or action_required if status is completed
+    statuses_check_run = []
+    conclusions_check_run = []
+    for check_run in check_runs:
+        pull_requests = check_run.get('pull_requests')
+        for pull_request in pull_requests:
+            pull_number_by_check_run = pull_request.get('number')
+            if str(pull_number_by_check_run) == pull_number:
+                statuses_check_run.append(check_run.get('status'))
+                conclusions_check_run.append(check_run.get('conclusion'))
+    logger.debug('List of statuses check run: %s ', statuses_check_run)
+    logger.debug('List of conclusions check run: %s ', conclusions_check_run)
+    states = statuses_check_run + conclusions_check_run + status_state
+    logger.debug('States: %s ', states)
+    if any(elem in states for elem in RED_STATUSES):
+        return RED
+    elif any(elem in states for elem in NOT_FINISHED_STATUSES):
+        return NOT_FINISHED
+    else:
+        return GREEN
+
+
+def ifttt_handler(res, pull_info):
     login = pull_info['user']['login']
     pr_html_url = pull_info.get('html_url')
-    state = status['state']
-    logger.debug('State of pull request: %s ', state)
-    if state == 'pending':
-        # not finished yet
-        msg_not_finish = 'This PR was merge without waiting for tests'
-        logger.debug('Msg_not_finish: %s ', msg_not_finish)
-        notify_ifttt(
-            IFTTT_HOOK_NOT_FINISHED_PR,
-            value1=login,
-            value2=pr_html_url,
-            value3=msg_not_finish
-        )
-        return
-    elif state in ('failure', 'error'):
-        msg_for_red_tests = 'This PR was merge with a red tests'
+    if res == RED:
+        msg_for_red_tests = 'This PR was merged with a red tests'
         notify_ifttt(
             IFTTT_HOOK_RED_PR,
             value1=login,
@@ -112,14 +149,25 @@ def ifttt_handler(status, pull_info):
             value3=msg_for_red_tests
         )
         return
-    else:
+    elif res == GREEN:
         # successful
-        msg_for_green_tests = 'This PR was merge with a green tests'
+        msg_for_green_tests = 'This PR was merged with a green tests'
         notify_ifttt(
             IFTTT_HOOK_GREEN_PR,
             value1=login,
             value2=pr_html_url,
             value3=msg_for_green_tests
+        )
+        return
+    else:
+        # not finished yet
+        msg_not_finish = 'This PR was merged without waiting for tests'
+        logger.debug('Msg_not_finish: %s ', msg_not_finish)
+        notify_ifttt(
+            IFTTT_HOOK_NOT_FINISHED_PR,
+            value1=login,
+            value2=pr_html_url,
+            value3=msg_not_finish
         )
         return
 
@@ -152,7 +200,6 @@ def get_pull_info(pulls_url, pull):
 def make_merge_pr(owner, repo, pull_number, headers):
     # PUT /repos/:owner/:repo/pulls/:pull_number/merge
     url = 'https://api.github.com/repos/%s/%s/pulls/%s/merge' % (owner, repo, pull_number)
-
     response = requests.request("PUT", url, headers=headers)
     if response.status_code == 200:
         logger.debug('Pull Request %s successfully merged', pull_number)
