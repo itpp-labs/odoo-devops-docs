@@ -47,7 +47,6 @@ def lambda_handler(event, context):
             logger.debug('State of pull request: %s ', pull_request_state)
             return
 
-        branch_origin = pull_info['head']['ref']
         username = payload.get('comment')['user']['login']
         headers = {
             'Authorization': 'token %s' % GITHUB_TOKEN,
@@ -56,12 +55,11 @@ def lambda_handler(event, context):
         }
         if username in USERNAMES.split(","):
             sha_head = pull_info['head']['sha']
-            owner_head = pull_info['head']['user']['login']
             owner_base = pull_info['base']['user']['login']
             repo_head = pull_info['head']['repo']['name']
-            status_state = [get_status_pr(owner_base, repo_head, sha_head)['state']]
-            logger.debug('status_state: %s ', status_state)
-            check_runs = get_status_check_run(owner_head, repo_head, branch_origin).get('check_runs')
+            status_state = [get_status_pr(owner_base, repo_head, sha_head).get('state')]
+            logger.debug('Status of state: %s ', status_state)
+            check_runs = get_status_check_run(owner_base, repo_head, sha_head).get('check_runs')
             # Merge a pull request (Merge Button): https://developer.github.com/v3/pulls/
             merge = make_merge_pr(owner, repo, pull_number, headers)
             if merge == 200:
@@ -83,9 +81,9 @@ def lambda_handler(event, context):
         logger.debug('Comment: %s ', comment)
 
 
-def get_status_check_run(owner_head, repo_head, branch_origin):
+def get_status_check_run(owner_base, repo_head, sha_head):
     # GET /repos/:owner/:repo/commits/:ref/check-runs
-    url = 'https://api.github.com/repos/%s/%s/commits/%s/check-runs' % (owner_head, repo_head, branch_origin)
+    url = 'https://api.github.com/repos/%s/%s/commits/%s/check-runs' % (owner_base, repo_head, sha_head)
     http = urllib3.PoolManager()
     res = http.request('GET', url, headers={
         # 'Content-Type': 'application/vnd.github.v3.raw+json',
