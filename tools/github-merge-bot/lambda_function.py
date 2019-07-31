@@ -66,7 +66,7 @@ def lambda_handler(event, context):
                 # Comments: https://developer.github.com/v3/issues/comments/
                 approve_comment = 'Approved by @%s' % username
                 make_issue_comment(owner, repo, pull_number, headers, approve_comment)
-                res = status_result(check_runs, status_state, pull_number)
+                res = status_result(check_runs, status_state)
                 ifttt_handler(res, pull_info, username)
             elif merge == 404:
                 approve_comment = 'Sorry @%s, I don\'t have access rights to push to this repository' % username
@@ -111,18 +111,14 @@ def get_status_pr(owner_base, repo_head, sha_head):
     return res
 
 
-def status_result(check_runs, status_state, pull_number):
+def status_result(check_runs, status_state):
     # get list of statuses check run. May be queued, in_progress or completed. And
     # get list of conclusions check run. May be success, failure, neutral, cancelled, timed_out, or action_required if status is completed
     statuses_check_run = []
     conclusions_check_run = []
     for check_run in check_runs:
-        pull_requests = check_run.get('pull_requests')
-        for pull_request in pull_requests:
-            pull_number_by_check_run = pull_request.get('number')
-            if str(pull_number_by_check_run) == pull_number:
-                statuses_check_run.append(check_run.get('status'))
-                conclusions_check_run.append(check_run.get('conclusion'))
+        statuses_check_run.append(check_run.get('status'))
+        conclusions_check_run.append(check_run.get('conclusion'))
     logger.debug('List of statuses check run: %s ', statuses_check_run)
     logger.debug('List of conclusions check run: %s ', conclusions_check_run)
     states = statuses_check_run + conclusions_check_run + status_state
