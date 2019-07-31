@@ -129,7 +129,7 @@ def status_result(check_runs, status_state, pull_number):
     logger.debug('States: %s ', states)
     if any(elem in states for elem in RED_STATUSES):
         return RED
-    elif any(elem in states for elem in NOT_FINISHED_STATUSES) or statuses_check_run + conclusions_check_run == []:
+    elif any(elem in states for elem in NOT_FINISHED_STATUSES):
         return NOT_FINISHED
     else:
         return GREEN
