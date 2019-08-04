@@ -63,9 +63,9 @@ def clone_repo_fork(github_login, github_password, github_token,
     for fork in repos:
         if repo_name == fork.name:
             repo_found = True
-            fork_ssh_url = fork.clone_url
+            fork_ssh_url = fork.ssh_url
             source = fork.source
-            source_ssh_url = source.clone_url
+            source_ssh_url = source.ssh_url
 
             print('Cloning {} in {}'.format(fork_ssh_url, clone_path))
             call(['git', 'clone', fork_ssh_url, clone_path])
