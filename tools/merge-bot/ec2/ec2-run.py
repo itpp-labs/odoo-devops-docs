@@ -2,7 +2,7 @@
 
 import json
 import boto3
-from subprocess import Popen, call
+from subprocess import Popen, call, check_output
 import requests
 import datetime
 import os
@@ -115,6 +115,14 @@ def process_message(msg_body, required_fields, github_token):
 
                     Popen(['python', '/home/ec2-user/odoo-devops/tools/merge-bot/scripts/merge.py',
                            base_branch, next_branch]).wait()
+                    write_in_log('merge in branch {} complete'.format(next_branch))
+
+                    merge_branch = check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD']).decode()[:-1]
+                    fork_user =\
+                        check_output(['git', 'remote', 'get-url', 'origin']).decode().split('/')[0].split(':')[-1]
+
+                    Popen(['python', '/home/ec2-user/odoo-devops/tools/merge-bot/scripts/pull-request.py',
+                           full_repo_name, next_branch, fork_user, merge_branch, '--github_token', github_token]).wait()
                     write_in_log('merge in branch {} complete'.format(next_branch))
 
             else:
