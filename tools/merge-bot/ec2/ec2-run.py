@@ -119,7 +119,7 @@ def process_message(msg_body, required_fields, github_token):
 
                 merge_branch = check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD']).decode()[:-1]
                 fork_user =\
-                    check_output(['git', 'remote', 'get-url', 'origin']).decode().split('/')[0].split(':')[-1]
+                    check_output(['git', 'remote', 'get-url', 'origin']).decode().split('/')[-2]
 
                 write_in_log('making pull-request in {} {} from {} {}'.format(full_repo_name, next_branch,
                                                                               fork_user, merge_branch))
