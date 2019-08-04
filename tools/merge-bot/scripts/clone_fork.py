@@ -63,14 +63,14 @@ def clone_repo_fork(github_login, github_password, github_token,
     for fork in repos:
         if repo_name == fork.name:
             repo_found = True
-            fork_ssh_url = fork.clone_url
+            fork_url = fork.clone_url.replace('https://', 'https://{}@'.format(github_token))
             source = fork.source
-            source_ssh_url = source.clone_url
+            source_url = source.clone_url.replace('https://', 'https://{}@'.format(github_token))
 
-            print('Cloning {} in {}'.format(fork_ssh_url, clone_path))
-            call(['git', 'clone', fork_ssh_url, clone_path])
+            print('Cloning {} in {}'.format(fork_url, clone_path))
+            call(['git', 'clone', fork_url, clone_path])
             os.chdir(clone_path)
-            call(['git', 'remote', 'add', 'upstream', source_ssh_url])
+            call(['git', 'remote', 'add', 'upstream', source_url])
 
     if not repo_found:
         print('Repo is not found!')
