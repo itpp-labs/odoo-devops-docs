@@ -14,9 +14,9 @@ def main():
                              " will be taken from GITHUB_TOKEN_FOR_BOT environmental variable",
                         default=os.getenv("GITHUB_TOKEN_FOR_BOT"))
     parser.add_argument("base_repo_name", help="Name of repository where PR will be made")
-    parser.add_argument("base_branch", help="Name of branch, in which merge will be made")
+    parser.add_argument("base_branch", help="Name of branch, in which PR will be made")
     parser.add_argument("forked_user", help="Name of the user who own a fork where branch is located")
-    parser.add_argument("head_branch", help="Name of branch, from where merge will be made")
+    parser.add_argument("head_branch", help="Name of branch, from where PR will be made")
 
     args = parser.parse_args()
     github_login = args.github_login
