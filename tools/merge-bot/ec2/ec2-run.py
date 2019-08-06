@@ -175,16 +175,19 @@ def main():
     write_in_log('{} messages received from SQS'.format(len(messages)))
 
     for message in messages:
-        msg_body = json.loads(message.body)
-        required_fields = ['action', 'number', 'repository']
+        try:
+            msg_body = json.loads(message.body)
+            required_fields = ['action', 'number', 'repository']
 
-        write_message(message.body)
-        successful = process_message(msg_body, required_fields, github_token)
+            write_message(message.body)
+            successful = process_message(msg_body, required_fields, github_token)
 
-        queue.delete_messages(Entries=[{
-            'Id': message.message_id,
-            'ReceiptHandle': message.receipt_handle
-        }])
+            queue.delete_messages(Entries=[{
+                'Id': message.message_id,
+                'ReceiptHandle': message.receipt_handle
+            }])
+        except ValueError:
+            write_in_log('message cant be processed'.format(len(messages)))
 
     if len(messages) == 0:
 
