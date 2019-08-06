@@ -41,7 +41,7 @@ def write_message(message):
         message_num += 1
     with io.open('/home/ec2-user/logs-github-bot/messages/{}-{}.txt'.format(now.strftime('%Y-%m-%d'), message_num),
                  'w', encoding="utf-8") as file:
-        file.write(message)
+        file.write(message.decode('utf-8'))
 
 
 def update_repository(path):
@@ -88,9 +88,10 @@ def process_message(msg_body, required_fields, github_token):
         action = msg_body['action']
         merged = msg_body['pull_request']['merged']
         base_branch = msg_body['pull_request']['base']['ref']
-        next_branch = str(int(base_branch.split('.')[0]) + 1) + '.0'
 
-        if action == 'closed' and merged:
+        if action == 'closed' and merged and base_branch in ['10.0', '11.0']:
+            next_branch = str(int(base_branch.split('.')[0]) + 1) + '.0'
+
             if next_branch in ['11.0', '12.0']:
 
                 write_in_log('forking repo: {}'.format(full_repo_name))
