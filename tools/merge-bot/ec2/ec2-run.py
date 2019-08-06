@@ -41,7 +41,7 @@ def write_message(message):
         message_num += 1
     with io.open('/home/ec2-user/logs-github-bot/messages/{}-{}.txt'.format(now.strftime('%Y-%m-%d'), message_num),
                  'w', encoding="utf-8") as file:
-        file.write(message.decode('utf-8'))
+        file.write(unicode(message))
 
 
 def update_repository(path):
