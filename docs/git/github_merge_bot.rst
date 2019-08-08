@@ -56,9 +56,9 @@ Create IFTTT applets
 
 * **Then** -- whatever you like. For actions with text ingredients use following for failed, success and not finished checks:
 
-  * ``Value1`` -- Author of the pull-request
-  * ``Value2`` -- Link to pull-request
-  * ``Value3`` -- Message about it
+  * ``Value1`` -- Author of the merge
+  * ``Value2`` -- Author of the pull-request
+  * ``Value3`` -- Link to pull-request
 
 Logs
 ----

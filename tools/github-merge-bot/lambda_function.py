@@ -133,35 +133,20 @@ def status_result(check_runs, status_state):
 
 def ifttt_handler(res, pull_info, username):
     pr_html_url = pull_info.get('html_url')
+    author_pr = pull_info['head']['user']['login']
+    values = {'value1': username,
+              'value2': author_pr,
+              'value3': pr_html_url}
     if res == RED:
-        msg_for_red_tests = 'This PR was merged with a red tests'
-        notify_ifttt(
-            IFTTT_HOOK_RED_PR,
-            value1=username,
-            value2=pr_html_url,
-            value3=msg_for_red_tests
-        )
+        notify_ifttt(IFTTT_HOOK_RED_PR, **values)
         return
     elif res == GREEN:
         # successful
-        msg_for_green_tests = 'This PR was merged with a green tests'
-        notify_ifttt(
-            IFTTT_HOOK_GREEN_PR,
-            value1=username,
-            value2=pr_html_url,
-            value3=msg_for_green_tests
-        )
+        notify_ifttt(IFTTT_HOOK_GREEN_PR, **values)
         return
     else:
         # not finished yet
-        msg_not_finish = 'This PR was merged without waiting for tests'
-        logger.debug('Msg_not_finish: %s ', msg_not_finish)
-        notify_ifttt(
-            IFTTT_HOOK_NOT_FINISHED_PR,
-            value1=username,
-            value2=pr_html_url,
-            value3=msg_not_finish
-        )
+        notify_ifttt(IFTTT_HOOK_NOT_FINISHED_PR, **values)
         return
 
 
