@@ -15,6 +15,7 @@ def deploy_bot(github_token, deployment_info, info_filename):
     role_name_lambda = deployment_info['role_name_lambda']
     lambda_name = deployment_info['lambda_name']
     instance_profile_name = deployment_info['instance_profile_name']
+    git_author = deployment_info['git_author']
 
     print('Starting deployment process.')
     user_data = open('/'.join(os.path.realpath(__file__).split('/')[:-1]) + '/ec2-script.sh').read()
@@ -32,7 +33,8 @@ def deploy_bot(github_token, deployment_info, info_filename):
     ssm_parameters = {
         'QUEUE_NAME': queue_name,
         'SHUTDOWN_TIME': '60',
-        'GITHUB_TOKEN_FOR_BOT': github_token
+        'GITHUB_TOKEN_FOR_BOT': github_token,
+        'GIT_AUTHOR': git_author
     }
     deployment_info['ssm_parameters'] = ssm_parameters
 
@@ -331,6 +333,11 @@ def main():
              " will be taken from GITHUB_TOKEN_FOR_BOT environmental variable.",
         default=os.getenv("GITHUB_TOKEN_FOR_BOT"))
     parser.add_argument(
+        "--git_author",
+        help="Author info to use in commits. If not specified, it"
+             "will be taken from GIT_AUTHOR environmental variable.",
+        default=os.getenv("GIT_AUTHOR"))
+    parser.add_argument(
         "--key_name",
         help="Name of a key in ec2 key pair to be created. Default value is \"github-bot-key\".",
         default="github-bot-key")
@@ -374,7 +381,8 @@ def main():
                                'lambda_name': args.lambda_name,
                                'role_name_lambda': args.role_name_lambda,
                                'role_name_ec2': args.role_name_ec2,
-                               'instance_profile_name': args.instance_profile_name}
+                               'instance_profile_name': args.instance_profile_name,
+                               'git_author': args.git_author}
 
             deploy_bot(args.github_token, deployment_info, args.info_filename)
         else:

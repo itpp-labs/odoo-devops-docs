@@ -66,7 +66,7 @@ def update_bot():
     call(['git', '-C', 'odoo-devops', 'reset', '--hard', 'origin'])
 
 
-def process_message(msg_body, required_fields, github_token):
+def process_message(msg_body, required_fields, github_token, git_author=None):
     """
     Processes message.
 
@@ -74,6 +74,10 @@ def process_message(msg_body, required_fields, github_token):
         Message to process in dictionary format.
     :param required_fields:
         Fields witch must be in message body to process it.
+    :param github_token:
+        Token from github account.
+    :param git_author:
+        Author info to use in commits.
     :return:
         If message is processed correctly returns True.
     """
@@ -115,7 +119,7 @@ def process_message(msg_body, required_fields, github_token):
                 os.chdir(repo_path)
 
                 Popen(['python', '/home/ec2-user/odoo-devops/tools/merge-bot/scripts/merge.py',
-                       base_branch, next_branch, '--auto_push']).wait()
+                       base_branch, next_branch, '--auto_push', '--author', git_author]).wait()
                 write_in_log('merge in branch {} complete'.format(next_branch))
 
                 merge_branch = check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD']).decode()[:-1]
@@ -160,6 +164,7 @@ def main():
     queue_name = ssm_client.get_parameter(Name='QUEUE_NAME', WithDecryption=True)['Parameter']['Value']
     shutdown_time = ssm_client.get_parameter(Name='SHUTDOWN_TIME', WithDecryption=True)['Parameter']['Value']
     github_token = ssm_client.get_parameter(Name='GITHUB_TOKEN_FOR_BOT', WithDecryption=True)['Parameter']['Value']
+    git_author = ssm_client.get_parameter(Name='GIT_AUTHOR', WithDecryption=True)['Parameter']['Value']
 
     sqs = boto3.resource('sqs', region_name=region_name)
     queue = sqs.get_queue_by_name(QueueName=queue_name)
@@ -180,7 +185,7 @@ def main():
             required_fields = ['action', 'number', 'repository']
 
             write_message(message.body)
-            successful = process_message(msg_body, required_fields, github_token)
+            successful = process_message(msg_body, required_fields, github_token, git_author=git_author)
 
             queue.delete_messages(Entries=[{
                 'Id': message.message_id,

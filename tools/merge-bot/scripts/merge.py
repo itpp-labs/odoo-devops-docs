@@ -18,6 +18,7 @@ def main():
                         dest='auto_resolve', action='store_true')
     parser.add_argument('--auto_push', help="option for automatically push branch to origin repo",
                         dest='auto_push', action='store_true')
+    parser.add_argument('--author', help="author info to use in commits", default=None)
     parser.add_argument("from_branch", help="Name of branch, from which merge will be made")
     parser.add_argument("in_branch", help="Name of branch, in which merge will be made")
 
@@ -26,14 +27,17 @@ def main():
     origin_remote = args.origin_remote
     auto_resolve = args.auto_resolve
     auto_push = args.auto_push
+    author = args.author
     from_branch = args.from_branch
     in_branch = args.in_branch
     new_branch_name = args.new_branch_name
 
-    merge_branches(upstream_remote, origin_remote, auto_resolve, auto_push, from_branch, in_branch, new_branch_name)
+    merge_branches(upstream_remote, origin_remote, auto_resolve, auto_push, author,
+                   from_branch, in_branch, new_branch_name)
 
 
-def merge_branches(upstream_remote, origin_remote, auto_resolve, auto_push, from_branch, in_branch, new_branch_name):
+def merge_branches(upstream_remote, origin_remote, auto_resolve, auto_push, author,
+                   from_branch, in_branch, new_branch_name):
     fetch(upstream_remote)
     call(['git', 'checkout', upstream_remote + '/' + in_branch])
     if new_branch_name is None:
@@ -67,7 +71,7 @@ def merge_branches(upstream_remote, origin_remote, auto_resolve, auto_push, from
                 solve_conflict(conflict)
 
             commit_all(':peace_symbol:' + VERSION_EMOJIS[in_branch] + ' some version conflicts in manifests are'
-                                                                      ' automatically resolved')
+                                                                      ' automatically resolved', author)
         else:
             abort_merge()
 
@@ -193,8 +197,11 @@ def commit_file(file_name, message):
     call(['git', 'commit', file_name, '-m', message])
 
 
-def commit_all(message):
-    call(['git', 'commit', '-a', '-m', message])
+def commit_all(message, author=None):
+    if author is None:
+        call(['git', 'commit', '-a', '-m', message])
+    else:
+        call(['git', 'commit', '-a', '--author', author, '-m', message])
 
 
 def branch_exists(branch_name):
