@@ -41,9 +41,17 @@ def pull_request(github_login, github_password, github_token, base_repo_name, ba
 
     repo = github.get_repo(base_repo_name)
 
-    repo.create_pull(title="Auto merge {}-{}".format(forked_user + ':' + head_branch, base_branch),
-                     body="This is auto merge from {} to {}".format(forked_user + ':' + head_branch, base_branch),
-                     base=base_branch, head=forked_user + ':' + head_branch)
+    pull_requests = repo.get_pulls()
+    merge_pr_exists = False
+
+    for pr in pull_requests:
+        if 'Auto merge {}:'.format(forked_user) in pr.title and '-{}'.format(base_branch) in pr.title:
+            merge_pr_exists = True
+
+    if not merge_pr_exists:
+        repo.create_pull(title="Auto merge {}:{}-{}".format(forked_user, head_branch, base_branch),
+                         body="This is auto merge from {}:{} to {}".format(forked_user, head_branch, base_branch),
+                         base=base_branch, head=forked_user + ':' + head_branch)
 
 
 if __name__ == "__main__":
