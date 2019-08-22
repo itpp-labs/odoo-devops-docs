@@ -46,7 +46,8 @@ Create IFTTT applets
 --------------------
 
 * **If** -- Service *Webhooks*
-Use ``{event}`` from ``Prepare IFTTT's hooks`` of this instruction. For example: ``Event Name`` = ``travis-success-pr``, ``Event Name`` = ``travis-failed-pr`` and ``Event Name`` = ``travis-failed-branch``
+
+  Use ``{event}`` from ``Prepare IFTTT's hooks`` of this instruction. For example: ``Event Name`` = ``travis-success-pr``, ``Event Name`` = ``travis-failed-pr`` and ``Event Name`` = ``travis-failed-branch``
 
 * **Then** -- whatever you like. For actions with text ingredients use following:
 
@@ -64,8 +65,10 @@ Travis settings
 ---------------
 
 * Update ``.travis.yml`` to get a notification in lambda when travis check is finished. You can configure either always notify on failure or only when previous check was successful. Check Travis Documentation for details: https://docs.travis-ci.com/user/notifications/#configuring-webhook-notifications
+
 * Look it for example:
-.. code-block:: python
+
+  .. code-block:: python
 
     notifications:
         webhooks: 
