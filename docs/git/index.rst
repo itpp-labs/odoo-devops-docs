@@ -8,4 +8,4 @@
 
    github
    github_merge_bot
-
+   github-review-bot
