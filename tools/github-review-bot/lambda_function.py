@@ -11,7 +11,7 @@ from botocore.vendored.requests.packages import urllib3
 
 LOG_LEVEL = os.environ.get('LOG_LEVEL')
 GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
-LINK_TO_READ_DOCS = '> sent by [review-bot](https://odoo-devops.readthedocs.io/en/latest/git/github_review_bot.html)'
+LINK_TO_READ_DOCS = '> sent by [:v: Review Bot](https://odoo-devops.readthedocs.io/en/latest/git/github-review-bot.html)'
 
 logger = logging.getLogger()
 if LOG_LEVEL:
