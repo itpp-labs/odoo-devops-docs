@@ -44,34 +44,51 @@ def main(GITHUB_TOKEN, full_name, pull_number, full_name_head_repo, branch_head_
     review_comments = []
     paths_inst_mod = []
     paths_non_inst_mod = []
+    paths_other = []
     list_update_files_pr = pr.get_files()
-    for pr_file in list_update_files_pr:
-        module_name = pr_file.filename.split('/')[0]
-        path_to_update_file = pr_file.filename
-        installable = False
-        if '/' in path_to_update_file:
-            path_to_manifest = 'https://github.com/%s/raw/%s/%s/__manifest__.py' % (
-            full_name_head_repo, str(branch_head_repo), module_name)
-            path_to_openerp = 'https://github.com/%s/raw/%s/%s/__openerp__.py' % (
-            full_name_head_repo, str(branch_head_repo), module_name)
-            html = requests.get(path_to_manifest, headers={'Authorization': 'token %s' % GITHUB_TOKEN})
-            if html.status_code != 200:
-                html = requests.get(path_to_openerp, headers={'Authorization': 'token %s' % GITHUB_TOKEN})
-            html = html.text
-            installable = ast.literal_eval(html).get('installable')
-        if installable or '/' not in path_to_update_file:
-            paths_inst_mod.append(path_to_update_file)
-        else:
-            paths_non_inst_mod.append(path_to_update_file)
-            
+    paths_to_update_files = [pr_file.filename for pr_file in list_update_files_pr]
+    pr_modules = set([path_to_update_file.split('/')[0] for path_to_update_file in paths_to_update_files if
+                      '/' in path_to_update_file])
+    # create dictionary of check from manifest or openerp file for installable or not installable modules
+    modules_check = {}
+    for pr_module in pr_modules:
+        # Get content manifest files in module
+        # Look: https://developer.github.com/v3/repos/contents/#get-contents
+        link_to_manifest = get_link_to_manifest(GITHUB_TOKEN, full_name, pr_module)
+        logger.debug("Link to manifest: %s", link_to_manifest)
+        html = requests.get(link_to_manifest)
+        html = html.text
+        installable = ast.literal_eval(html).get('installable', True)
+        modules_check[pr_module] = installable
+    logger.debug("Dict of check for installable or not installable modules: \n%s", modules_check)
+
+    for path_to_file in paths_to_update_files:
+        name_module = path_to_file.split('/')[0]
+        # check each updated file in accordance with the manifest
+        if name_module in modules_check:
+            if modules_check.get(name_module):
+                paths_inst_mod.append(path_to_file)
+            else:
+                paths_non_inst_mod.append(path_to_file)
+        # if updated file is not in the module, then we send it to the tree with the installable modules
+        if '/' not in path_to_file:
+            paths_other.append(path_to_file)
     logger.debug("Paths of update files in installable modules: \n%s", paths_inst_mod)
     logger.debug("Paths of update files in non-installable modules: \n%s", paths_non_inst_mod)
-    tree_inst = create_tree(paths_inst_mod)
+    logger.debug("Paths of other updated files: \n%s", paths_other)
+
+    tree_inst = None
     tree_non_inst = None
+    tree_other = None
+    if paths_inst_mod != []:
+        tree_inst = create_tree(paths_inst_mod)
     if paths_non_inst_mod != []:
         tree_non_inst = create_tree(paths_non_inst_mod)
+    if paths_other != []:
+        tree_other = create_tree(paths_other)
     installable_modules = set([module.split('/')[0] for module in paths_inst_mod if '/' in module])
     non_installable_modules = set([module.split('/')[0] for module in paths_non_inst_mod])
+
     for pr_file in list_update_files_pr:
         path_to_pr_file = pr_file.filename
         if 'changelog.rst' in path_to_pr_file and path_to_pr_file.split('/')[0] in installable_modules:
@@ -91,10 +108,12 @@ def main(GITHUB_TOKEN, full_name, pull_number, full_name_head_repo, branch_head_
     blank_block = "```\n```"
     quantity_inst_mod = len(installable_modules)
     quantity_non_inst_mod = len(non_installable_modules)
-    review_body = "{}\n" \
+    review_body = "{}\n\n" \
+                  "{}\n" \
                   "{}\n\n" \
                   "{}\n" \
                   "{}\n\n".format(
+        '%s' % tree_other or '',
         '%s' % 'Installable modules remain unchanged.' if len(
             installable_modules) == 0 else '**{} installable** module{} updated:'.format(
             quantity_inst_mod, ' is' if quantity_inst_mod == 1 else 's are'),
@@ -127,6 +146,24 @@ def main(GITHUB_TOKEN, full_name, pull_number, full_name_head_repo, branch_head_
         pr.create_review(commit=pr_commits[pr_commits.totalCount - 1],
                          body=review_body
                          , event='COMMENT', comments=review_comments)
+
+
+def get_link_to_manifest(GITHUB_TOKEN, full_name, pr_module):
+    # GET /repos/:owner/:repo/contents/:path
+    url = 'https://api.github.com/repos/%s/contents/%s' % (full_name, pr_module)
+    http = urllib3.PoolManager()
+    res = http.request('GET', url, headers={
+        'Accept': 'application/vnd.github.v3.raw',
+        'User-Agent': 'aws lambda handler',
+        'Authorization': 'token %s' % GITHUB_TOKEN})
+    list_files = json.loads(res.data)
+    for file in list_files:
+        name_file = file.get('name')
+        if name_file == '__manifest__.py' or name_file == '__openerp__.py':
+            link_to_manifest = file.get('download_url')
+            if not link_to_manifest:
+                link_to_manifest = file.get('html_url')
+            return link_to_manifest
 
 
 def create_tree(paths):
