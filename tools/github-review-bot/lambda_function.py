@@ -56,6 +56,8 @@ def main(GITHUB_TOKEN, full_name, pull_number, full_name_head_repo, branch_head_
         # Look: https://developer.github.com/v3/repos/contents/#get-contents
         link_to_manifest = get_link_to_manifest(GITHUB_TOKEN, full_name, pr_module)
         logger.debug("Link to manifest: %s", link_to_manifest)
+        if link_to_manifest is None:
+            continue
         html = requests.get(link_to_manifest)
         html = html.text
         installable = ast.literal_eval(html).get('installable', True)
@@ -64,12 +66,15 @@ def main(GITHUB_TOKEN, full_name, pull_number, full_name_head_repo, branch_head_
 
     for path_to_file in paths_to_update_files:
         name_module = path_to_file.split('/')[0]
-        # check each updated file in accordance with the manifest
-        if name_module in modules_check:
-            if modules_check.get(name_module):
-                paths_inst_mod.append(path_to_file)
-            else:
-                paths_non_inst_mod.append(path_to_file)
+        if modules_check != {}:
+            # check each updated file in accordance with the manifest
+            if name_module in modules_check:
+                if modules_check.get(name_module):
+                    paths_inst_mod.append(path_to_file)
+                else:
+                    paths_non_inst_mod.append(path_to_file)
+        else:
+            paths_other.append(path_to_file)
         # if updated file is not in the module, then we send it to the tree with the installable modules
         if '/' not in path_to_file:
             paths_other.append(path_to_file)
@@ -161,8 +166,6 @@ def get_link_to_manifest(GITHUB_TOKEN, full_name, pr_module):
         name_file = file.get('name')
         if name_file == '__manifest__.py' or name_file == '__openerp__.py':
             link_to_manifest = file.get('download_url')
-            if not link_to_manifest:
-                link_to_manifest = file.get('html_url')
             return link_to_manifest
 
 
