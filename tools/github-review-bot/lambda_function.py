@@ -118,7 +118,7 @@ def main(GITHUB_TOKEN, full_name, pull_number, full_name_head_repo, branch_head_
                   "{}\n\n" \
                   "{}\n" \
                   "{}\n\n".format(
-        '%s' % tree_other or '',
+        '%s' % (tree_other or ''),
         '%s' % 'Installable modules remain unchanged.' if len(
             installable_modules) == 0 else '**{} installable** module{} updated:'.format(
             quantity_inst_mod, ' is' if quantity_inst_mod == 1 else 's are'),
@@ -163,6 +163,8 @@ def get_link_to_manifest(GITHUB_TOKEN, full_name, pr_module):
         'Authorization': 'token %s' % GITHUB_TOKEN})
     list_files = json.loads(res.data)
     for file in list_files:
+        if type(file) is not dict:
+            continue
         name_file = file.get('name')
         if name_file == '__manifest__.py' or name_file == '__openerp__.py':
             link_to_manifest = file.get('download_url')
