@@ -7,5 +7,5 @@
    :caption: Contents:
 
    github
-   github_merge_bot
+   github-merge-bot
    github-review-bot

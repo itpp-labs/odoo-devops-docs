@@ -20,6 +20,7 @@ MSG_RQST_MERGE = os.environ.get('MSG_RQST_MERGE', 'I approve to merge it now')
 IFTTT_HOOK_RED_PR = os.environ.get('IFTTT_HOOK_RED_PR')
 IFTTT_HOOK_GREEN_PR = os.environ.get('IFTTT_HOOK_GREEN_PR')
 IFTTT_HOOK_NOT_FINISHED_PR = os.environ.get('IFTTT_HOOK_NOT_FINISHED_PR')
+LINK_TO_READ_DOCS = '> sent by [:construction_worker_man: Merge Bot](https://odoo-devops.readthedocs.io/en/latest/git/github-merge-bot.html)'
 
 logger = logging.getLogger()
 if LOG_LEVEL:
@@ -192,6 +193,7 @@ def make_merge_pr(owner, repo, pull_number, headers):
 def make_issue_comment(owner, repo, pull_number, headers, approve_comment=None):
     # POST /repos/:owner/:repo/issues/:issue_number/comments
     url = 'https://api.github.com/repos/%s/%s/issues/%s/comments' % (owner, repo, pull_number)
+    approve_comment += '\n\n{}'.format(LINK_TO_READ_DOCS)
     body = {'body': approve_comment}
     comment = json.dumps(body)
     response = requests.request("POST", url, data=comment, headers=headers)
