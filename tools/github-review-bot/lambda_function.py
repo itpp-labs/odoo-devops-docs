@@ -54,7 +54,7 @@ def main(GITHUB_TOKEN, full_name, pull_number, full_name_head_repo, branch_head_
     for pr_module in pr_modules:
         # Get content manifest files in module
         # Look: https://developer.github.com/v3/repos/contents/#get-contents
-        link_to_manifest = get_link_to_manifest(GITHUB_TOKEN, full_name, pr_module)
+        link_to_manifest = get_link_to_manifest(GITHUB_TOKEN, full_name_head_repo, branch_head_repo, pr_module)
         logger.debug("Link to manifest: %s", link_to_manifest)
         if link_to_manifest is None:
             continue
@@ -153,15 +153,18 @@ def main(GITHUB_TOKEN, full_name, pull_number, full_name_head_repo, branch_head_
                          , event='COMMENT', comments=review_comments)
 
 
-def get_link_to_manifest(GITHUB_TOKEN, full_name, pr_module):
+def get_link_to_manifest(GITHUB_TOKEN, full_name_head_repo, branch_head_repo, pr_module):
+    logger.debug("Full name head repo: %s", full_name_head_repo)
+    logger.debug("Branch head repo: %s", branch_head_repo)
     # GET /repos/:owner/:repo/contents/:path
-    url = 'https://api.github.com/repos/%s/contents/%s' % (full_name, pr_module)
+    url = 'https://api.github.com/repos/%s/contents/%s?ref=%s#' % (full_name_head_repo, pr_module, branch_head_repo)
     http = urllib3.PoolManager()
     res = http.request('GET', url, headers={
         'Accept': 'application/vnd.github.v3.raw',
         'User-Agent': 'aws lambda handler',
         'Authorization': 'token %s' % GITHUB_TOKEN})
     list_files = json.loads(res.data)
+    logger.debug("list_files: \n%s", list_files)
     for file in list_files:
         if type(file) is not dict:
             continue
