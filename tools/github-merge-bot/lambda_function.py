@@ -181,7 +181,8 @@ def get_pull_info(pulls_url, pull):
 def make_merge_pr(owner, repo, pull_number, headers):
     # PUT /repos/:owner/:repo/pulls/:pull_number/merge
     url = 'https://api.github.com/repos/%s/%s/pulls/%s/merge' % (owner, repo, pull_number)
-    response = requests.request("PUT", url, headers=headers)
+    data = {"commit_message": "commit is created by :construction_worker_man: Merge Bot: https://odoo-devops.readthedocs.io/en/latest/git/github-merge-bot.html"}
+    response = requests.request("PUT", url, headers=headers, json=data)
     if response.status_code == 200:
         logger.debug('Pull Request %s successfully merged', pull_number)
         return response.status_code
