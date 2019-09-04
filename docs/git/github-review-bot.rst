@@ -38,7 +38,7 @@ Create AWS Lambda function
         mkdir /tmp/github-review-bot
         cd /tmp/github-review-bot
 
-        pip install pyGithub -t .
+        pip3 install pyGithub -t .
         wget https://gitlab.com/itpp/odoo-devops/raw/master/tools/github-review-bot/lambda_function.py
         wget https://gitlab.com/itpp/odoo-devops/raw/master/tools/github-review-bot/text_tree.py
         zip -r /tmp/github-review-bot.zip *
