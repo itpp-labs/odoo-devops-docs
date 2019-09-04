@@ -33,7 +33,7 @@ Create AWS Lambda function
 
   * Use this commands:
 
-.. code-block:: console
+    .. code-block:: console
 
         mkdir /tmp/github-review-bot
         cd /tmp/github-review-bot
@@ -43,6 +43,7 @@ Create AWS Lambda function
         wget https://gitlab.com/itpp/odoo-devops/raw/master/tools/github-review-bot/text_tree.py
         zip -r /tmp/github-review-bot.zip *
 
+  * Then set **Code Entry type** to ``Upload a .zip file`` and select the created zip file
 * Basic settings
 
   * Change time running function to 50 sec -- ``Timeout`` (default 3 sec)
