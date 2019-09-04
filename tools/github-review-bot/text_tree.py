@@ -30,7 +30,7 @@ def _draw_tree(tree, level, last=False, sup=[]):
 
     dir_tree += (''.join(reduce(update, sup, ['{}  '.format(pipe)] * level)) \
           + (end if last else branch) + '{} '.format(dash) \
-          + (str(tree.tag) + '/' if '.' not in str(tree.tag) else str(tree.tag)) + '\n')
+          + (str(tree.tag) + '/' if isinstance(tree, Node) else str(tree.tag)) + '\n')
     if isinstance(tree, Node):
         level += 1
         for node in tree.nodes[:-1]:
