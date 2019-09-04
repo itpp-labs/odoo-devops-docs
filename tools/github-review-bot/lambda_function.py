@@ -137,6 +137,9 @@ def main(GITHUB_TOKEN, full_name, pull_number, full_name_head_repo, branch_head_
             continue
         id_review = review.id
         break
+    if not review_comments:
+        review_body += 'No new features in *doc/changelog.rst* files of installable modules\n\n'
+    review_body += '%s' % LINK_TO_READ_DOCS
     if id_review:
         # Update a pull request review
         # Look: https://developer.github.com/v3/pulls/reviews/#update-a-pull-request-review
@@ -145,9 +148,6 @@ def main(GITHUB_TOKEN, full_name, pull_number, full_name_head_repo, branch_head_
         # Create a pull request review
         # Look: https://pygithub.readthedocs.io/en/latest/github_objects/PullRequest.html#github.PullRequest.PullRequest.create_review
         pr_commits = pr.get_commits()
-        if not review_comments:
-            review_body += 'No new features in *doc/changelog.rst* files of installable modules\n\n'
-        review_body += '%s' % LINK_TO_READ_DOCS
         pr.create_review(commit=pr_commits[pr_commits.totalCount - 1],
                          body=review_body
                          , event='COMMENT', comments=review_comments)
