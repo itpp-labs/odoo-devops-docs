@@ -29,11 +29,6 @@ Create AWS Lambda function
   * **Content Type**: application/json
   * **Which events would you like to trigger this webhook?** -- *Let me select individual events* and then select ``[x] Pull request``
 
-* Requirements
-
-  * Install local package pyGithub: https://pypi.org/project/PyGithub/
-  * AWS Lambda Deployment Package in Python: https://docs.aws.amazon.com/en_us/lambda/latest/dg/lambda-python-how-to-create-deployment-package.html#python-package-dependencies
-
 * Function Code
 
   * Use this commands:
