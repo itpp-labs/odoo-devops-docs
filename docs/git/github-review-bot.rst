@@ -52,3 +52,8 @@ Logs
 ----
 
 * AWS CloudWatch: https://console.aws.amazon.com/cloudwatch . Choose tab ``Logs``
+
+Roadmap
+-------
+
+* TODO: Deleted files should be listed with tag ``[DELETED]``
