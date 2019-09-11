@@ -9,3 +9,4 @@
    github
    github-merge-bot
    github-review-bot
+   github-telegram-notifications
