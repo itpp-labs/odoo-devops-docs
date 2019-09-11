@@ -5,7 +5,7 @@
 Prerequisites
 =============
 
-* Add a new SSH key to your GitHub account. See: https://help.github.com/en/articles/adding-a-new-ssh-key-to-your-github-account
+* Add a SSH key to your GitHub account. See: https://help.github.com/en/articles/adding-a-new-ssh-key-to-your-github-account
 * Install hub. Look this: https://github.com/github/hub#installation 
 
 Script
