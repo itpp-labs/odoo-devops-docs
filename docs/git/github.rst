@@ -1,26 +1,39 @@
 ==================================
- GitHub script for pull requests
+ Creating Pull Requests in batch
 ==================================
 
-
-Use it script for make pull requests for all repos all branches
----------------------------------------------------------------
+Prerequisites
+=============
 
 * Add a new SSH key to your GitHub account. See: https://help.github.com/en/articles/adding-a-new-ssh-key-to-your-github-account
-* Create new <your file> in your work directory, copy-paste and update this code:
+* Install hub. Look this: https://github.com/github/hub#installation 
 
-.. code-block:: console
+Script
+======
+
+Make a script ``make-prs.sh`` with following content
+
+.. code-block:: bash
 
     #!/bin/bash
 
-    UPSTREAM_URL_GIT=https://github.com/it-projects-llc
-    ORIGIN_URL_GIT=https://github.com/kaadevelop
-    DIRECTORY_CLONE=$HOME/odoo/bash/repos
-    USERNAME=kaadevelop
-    MSG=":shield: travis.yml notifications webhook travis"
+    # ORGANIZATION GITHUB URL
+    ORG=it-projects-llc
+    UPSTREAM_URL_GIT=https://github.com/$ORG
+
+    # DEVELOPER INFO
+    USERNAME=yelizariev
+
+    # WHERE TO CLONE
+    DIRECTORY_CLONE=./
+
+    # DESCRIPTION OF THE UPDATES
+    MSG=":shield: travis.yml notifications webhook travis
+    BRANCH_SUFFIX=travis-notifications
+
     REPOS=(
         misc-addons
-        #saas-addons
+        saas-addons
         pos-addons
         access-addons
         mail-addons
@@ -33,30 +46,28 @@ Use it script for make pull requests for all repos all branches
 	)
 
     for REPO in "${REPOS[@]}"; do
-        git clone $UPSTREAM_URL_GIT/$REPO.git $DIRECTORY_CLONE/$REPO
+        [ ! -d $DIRECTORY_CLONE/$REPO ] && git clone $UPSTREAM_URL_GIT/$REPO.git $DIRECTORY_CLONE/$REPO
         cd $DIRECTORY_CLONE/$REPO
         git remote rename origin upstream
-        git remote add origin $ORIGIN_URL_GIT/$REPO.git
-        git remote set-url origin git@github.com:$USERNAME/$REPO.git
+        git remote add origin git@github.com:$USERNAME/$REPO.git
         for BRANCH in "${BRANCHES[@]}"; do
-            git branch $BRANCH upstream/$BRANCH
-            git checkout $BRANCH
+            git checkout -b $BRANCH-$BRANCH_SUFFIX upstream/$BRANCH
+
+            # CHECK THAT UPDATES ARE NOT DONE YET
             if grep -qx '    on_failure: change' .travis.yml
             then
-                echo "Hola!"
+                echo "File are already updated in $REPO#$BRANCH"
             else
+                # MAKE UPDATE
                 { echo '  webhooks:'; echo '    on_failure: change'; echo '  urls:'; echo '    - "https://ci.it-projects.info/travis/on_failure/change"';} >> ./.travis.yml
-                git add .travis.yml
-                git commit -m "$MSG"
-                git push origin -f $BRANCH
-                hub pull-request -b it-projects-llc:$BRANCH -m "$MSG"
             fi
+            git commit -a -m "$MSG"
+            git push origin $BRANCH-$BRANCH_SUFFIX
+            hub pull-request -b it-projects-llc:$BRANCH -m "$MSG"
         done
     done
 
-* Install hub. Look this: https://github.com/github/hub#installation 
-* Run your file in terminal from your work directory:
+Update script according to you needs
 
-  * ``sudo chmod +x <your file>``
-  * ``./<your file>``
+Run it with ``bash make-prs.sh``
 
