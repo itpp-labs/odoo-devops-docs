@@ -46,10 +46,14 @@ Make a script ``make-prs.sh`` with following content
 	)
 
     for REPO in "${REPOS[@]}"; do
-        [ ! -d $DIRECTORY_CLONE/$REPO ] && git clone $UPSTREAM_URL_GIT/$REPO.git $DIRECTORY_CLONE/$REPO
+        if [ ! -d $DIRECTORY_CLONE/$REPO ]
+        then
+            git clone $UPSTREAM_URL_GIT/$REPO.git $DIRECTORY_CLONE/$REPO
+            cd $DIRECTORY_CLONE/$REPO
+            git remote rename origin upstream
+            git remote add origin git@github.com:$USERNAME/$REPO.git
+        fi
         cd $DIRECTORY_CLONE/$REPO
-        git remote rename origin upstream
-        git remote add origin git@github.com:$USERNAME/$REPO.git
         for BRANCH in "${BRANCHES[@]}"; do
             git checkout -b $BRANCH-$BRANCH_SUFFIX upstream/$BRANCH
 
