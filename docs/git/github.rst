@@ -28,7 +28,7 @@ Make a script ``make-prs.sh`` with following content
     DIRECTORY_CLONE=./
 
     # DESCRIPTION OF THE UPDATES
-    MSG=":shield: travis.yml notifications webhook travis
+    MSG=":shield: travis.yml notifications webhook travis"
     BRANCH_SUFFIX=travis-notifications
 
     REPOS=(
