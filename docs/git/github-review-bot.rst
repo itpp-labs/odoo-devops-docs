@@ -57,3 +57,4 @@ Roadmap
 -------
 
 * TODO: Deleted files should be listed with tag ``[DELETED]``
+* TODO: Renamed files should be listed with tag ``[RENAMED from path/to/original-file]`` (for new files) and ``[RENAMED]`` (for original place of the file)
