@@ -11,3 +11,4 @@ Odoo DevOps
    git/index	
    ifttt/index
    lint
+   remote-dev/index
