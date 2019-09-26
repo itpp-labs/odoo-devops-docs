@@ -102,7 +102,7 @@
 
     ## nginx on host machine
     cd /tmp/
-    curl -s https://raw.githubusercontent.com/it-projects-llc/odoo-devops/master/docs/remote-dev/lxd/nginx.conf > nginx.conf
+    curl -s https://gitlab.com/itpp/odoo-devops/raw/master/docs/remote-dev/lxd/nginx.conf > nginx.conf
     sed -i "s/NGINX_SERVER_DOMAIN/.${SERVER_DOMAIN}/g" nginx.conf
     sed -i "s/SERVER_HOST/${LOCAL_IP}/g" nginx.conf
     cp nginx.conf /etc/nginx/sites-available/${NGINX_CONF}
