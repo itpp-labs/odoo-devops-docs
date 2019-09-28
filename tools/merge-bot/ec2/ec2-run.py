@@ -119,7 +119,8 @@ def process_message(msg_body, required_fields, github_token, git_author=None):
                 os.chdir(repo_path)
 
                 Popen(['python', '/home/ec2-user/odoo-devops/tools/merge-bot/scripts/merge.py',
-                       base_branch, next_branch, '--auto_push', '--author', git_author]).wait()
+                       base_branch, next_branch, '--auto_resolve' '--auto_push',
+                       '--author', git_author]).wait()
                 write_in_log('merge in branch {} complete'.format(next_branch))
 
                 merge_branch = check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD']).decode()[:-1]
