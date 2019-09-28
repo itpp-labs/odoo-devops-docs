@@ -61,10 +61,11 @@ def merge_branches(upstream_remote, origin_remote, auto_resolve, auto_push, auth
             if len(conflict_files) == 0:
                 break
 
-        merge(upstream_remote + '/' + in_branch)
+        conflict_files = merge(upstream_remote + '/' + in_branch)
 
         if auto_resolve:
             print(conflict_files)
+            print('Resolving conflicts...')
             abort_merge()
 
             solve_translation_conflicts(conflict_files, in_branch)
@@ -83,7 +84,7 @@ def merge_branches(upstream_remote, origin_remote, auto_resolve, auto_push, auth
 def solve_translation_conflicts(conflict_files, checkout_branch):
     for conflict_file in conflict_files:
         if conflict_file.endswith('.pot'):
-            checkout_one_file(conflict_files, checkout_branch)
+            checkout_one_file(conflict_file, checkout_branch)
 
 
 def checkout_one_file(file_path, branch):
