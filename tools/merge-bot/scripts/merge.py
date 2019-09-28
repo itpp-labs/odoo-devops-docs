@@ -64,14 +64,14 @@ def merge_branches(upstream_remote, origin_remote, auto_resolve, auto_push, auth
         merge(upstream_remote + '/' + in_branch)
 
         if auto_resolve:
-            conflicts = find_resolvable_conflicts()
+            print(conflict_files)
             abort_merge()
 
-            for conflict in conflicts:
-                solve_conflict(conflict)
+            solve_translation_conflicts(conflict_files, in_branch)
 
-            commit_all(':peace_symbol:' + VERSION_EMOJIS[in_branch] + ' some version conflicts in manifests are'
-                                                                      ' automatically resolved', author)
+            commit_all(':peace_symbol:' + VERSION_EMOJIS[in_branch] +
+                       ' translation conflicts are automatically resolved',
+                       author)
         else:
             abort_merge()
 
@@ -80,104 +80,14 @@ def merge_branches(upstream_remote, origin_remote, auto_resolve, auto_push, auth
         print(str(new_branch_name), 'pushed to', origin_remote)
 
 
-def find_resolvable_conflicts():
-    conflicts = []
-    file_names = []
-    conflict_file = ''
-    file_found = False
-    conflict_found = False
-    lines = diff().split('\n')
-    line_num = 0
-    conflict_line = 0
-    while line_num < len(lines):
-        if lines[line_num].startswith('diff --cc '):
-            file_names.append(lines[line_num][10:])
-            if lines[line_num].endswith('__manifest__.py'):
-                conflict_file = file_names[-1]
-                file_found = True
-
-                while not lines[line_num].startswith('@@@ '):
-                    line_num += 1
-                begin = lines[line_num].split(' ')[1].split(',')[0][1:]
-                conflict_line = int(begin) - 1
-            else:
-                file_found = False
-        elif file_found:
-
-            if not conflict_found:
-                if lines[line_num].startswith('++<<<<<<< '):
-                    conflicts.append({'file': conflict_file, 'body1': '', 'body2': '', 'lines': [], 'solution': ''})
-                    conflicts[-1]['lines'].append(conflict_line)
-                    conflict_found = True
-            else:
-                if lines[line_num].startswith('++======='):
-                    conflicts[-1]['lines'].append(conflict_line)
-                elif lines[line_num].startswith('++>>>>>>> '):
-                    conflicts[-1]['lines'].append(conflict_line)
-                    conflict_found = False
-                else:
-                    if len(conflicts[-1]['lines']) == 1:
-                        conflicts[-1]['body1'] += lines[line_num][2:] + '\n'
-                    else:
-                        conflicts[-1]['body2'] += lines[line_num][2:] + '\n'
-            conflict_line += 1
-        line_num += 1
-
-    for conflict in conflicts[:]:
-        if conflict['file'].endswith('__manifest__.py'):
-            if conflict['file'].replace('__manifest__.py', 'doc/changelog.rst') not in file_names \
-                    and '"version"' in conflict['body1'] and '"version"' in conflict['body2']:
-
-                conflict['solution'] = solve_version(conflict['body1'], conflict['body2'])
-
-                print(conflict)
-            else:
-                conflicts.remove(conflict)
-
-    return conflicts
+def solve_translation_conflicts(conflict_files, checkout_branch):
+    for conflict_file in conflict_files:
+        if conflict_file.endswith('.pot'):
+            checkout_one_file(conflict_files, checkout_branch)
 
 
-def parse_version(line):
-    return line.split('"')[-2]
-
-
-def solve_version(old_version, new_version):
-    parsed_old = parse_version(old_version).split('.')
-    parsed_new = parse_version(new_version).split('.')
-    odoo_version = parsed_new[0] + '.' + parsed_new[1]
-
-    module_version = ''
-    for i in range(2, len(parsed_new)):
-        if parsed_new[i] > parsed_old[i]:
-            for j in range(i, len(parsed_new)):
-                module_version += '.' + parsed_new[j]
-            break
-        elif parsed_new[i] < parsed_old[i]:
-            for j in range(i, len(parsed_new)):
-                module_version += '.' + parsed_old[j]
-            break
-        else:
-            module_version += '.' + parsed_new[i]
-
-    version = odoo_version + module_version
-
-    version_line = new_version.replace(parse_version(new_version), version)
-
-    return version_line
-
-
-def solve_conflict(conflict):
-    solution_lines = conflict['solution'].split('\n')[0:-1]
-    with open(conflict['file'], 'r') as file:
-        data = file.readlines()
-        del data[conflict['lines'][0] + 1: conflict['lines'][1]]
-        for i in range(len(solution_lines)):
-            data.insert(conflict['lines'][0] + i + 1, solution_lines[i] + '\n')
-
-    with open(conflict['file'], 'w') as file:
-        file.writelines(data)
-
-    print(conflict['file'], 'conflict solved')
+def checkout_one_file(file_path, branch):
+    call(['git', 'checkout', branch, '--', file_path])
 
 
 def get_remote_name(name):
