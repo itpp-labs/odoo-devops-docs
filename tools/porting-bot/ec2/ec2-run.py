@@ -101,7 +101,7 @@ def process_message(msg_body, required_fields, github_token, git_author=None,
 
                 write_in_log('forking repo: {}'.format(full_repo_name))
 
-                Popen(['python', '/home/ec2-user/odoo-devops/tools/merge-bot/scripts/fork.py',
+                Popen(['python', '/home/ec2-user/odoo-devops/tools/porting-bot/scripts/fork.py',
                        full_repo_name, '--github_token', github_token]).wait()
                 write_in_log('fork complete')
 
@@ -112,14 +112,14 @@ def process_message(msg_body, required_fields, github_token, git_author=None,
 
                 else:
                     write_in_log('cloning fork repo in {}'.format(repo_path))
-                    Popen(['python', '/home/ec2-user/odoo-devops/tools/merge-bot/scripts/clone_fork.py',
+                    Popen(['python', '/home/ec2-user/odoo-devops/tools/porting-bot/scripts/clone_fork.py',
                            repo_name, repo_path, '--github_token', github_token]).wait()
                     write_in_log('clone complete')
 
                 write_in_log('merging repo: {}'.format(full_repo_name))
                 os.chdir(repo_path)
 
-                Popen(['python', '/home/ec2-user/odoo-devops/tools/merge-bot/scripts/merge.py',
+                Popen(['python', '/home/ec2-user/odoo-devops/tools/porting-bot/scripts/merge.py',
                        base_branch, next_branch, '--auto_resolve' '--auto_push',
                        '--author', git_author]).wait()
                 write_in_log('merge in branch {} complete'.format(next_branch))
@@ -130,7 +130,7 @@ def process_message(msg_body, required_fields, github_token, git_author=None,
 
                 write_in_log('making pull-request in {} {} from {} {}'.format(full_repo_name, next_branch,
                                                                               fork_user, merge_branch))
-                Popen(['python', '/home/ec2-user/odoo-devops/tools/merge-bot/scripts/pull-request.py',
+                Popen(['python', '/home/ec2-user/odoo-devops/tools/porting-bot/scripts/pull-request.py',
                        full_repo_name, next_branch, fork_user, merge_branch,
                        '--github_token', github_token,
                        '--webhook_when_porting_pr_exists', hook_exists,
