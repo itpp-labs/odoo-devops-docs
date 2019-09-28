@@ -66,13 +66,14 @@ def update_bot():
     call(['git', '-C', 'odoo-devops', 'reset', '--hard', 'origin'])
 
 
-def process_message(msg_body, required_fields, github_token, git_author=None):
+def process_message(msg_body, required_fields, github_token, git_author=None,
+                    hook_exists=None, hook_created=None):
     """
     Processes message.
 
     :param msg_body:
         Message to process in dictionary format.
-    :param required_fields:
+    :param required_fields:po_po_
         Fields witch must be in message body to process it.
     :param github_token:
         Token from github account.
@@ -130,7 +131,11 @@ def process_message(msg_body, required_fields, github_token, git_author=None):
                 write_in_log('making pull-request in {} {} from {} {}'.format(full_repo_name, next_branch,
                                                                               fork_user, merge_branch))
                 Popen(['python', '/home/ec2-user/odoo-devops/tools/merge-bot/scripts/pull-request.py',
-                       full_repo_name, next_branch, fork_user, merge_branch, '--github_token', github_token]).wait()
+                       full_repo_name, next_branch, fork_user, merge_branch,
+                       '--github_token', github_token,
+                       '--webhook_when_porting_pr_exists', hook_exists,
+                       '--webhook_when_porting_pr_created', hook_created,
+                       '--original_pr_title', msg_body['pull_request']['title']]).wait()
 
                 write_in_log('pull-request complete'.format(next_branch))
 
@@ -166,6 +171,8 @@ def main():
     shutdown_time = ssm_client.get_parameter(Name='SHUTDOWN_TIME', WithDecryption=True)['Parameter']['Value']
     github_token = ssm_client.get_parameter(Name='GITHUB_TOKEN_FOR_BOT', WithDecryption=True)['Parameter']['Value']
     git_author = ssm_client.get_parameter(Name='GIT_AUTHOR', WithDecryption=True)['Parameter']['Value']
+    hook_exists = ssm_client.get_parameter(Name='WEBHOOK_WHEN_PORTING_PR_EXISTS', WithDecryption=True)['Parameter']['Value']
+    hook_created = ssm_client.get_parameter(Name='WEBHOOK_WHEN_PORTING_PR_CREATED', WithDecryption=True)['Parameter']['Value']
 
     sqs = boto3.resource('sqs', region_name=region_name)
     queue = sqs.get_queue_by_name(QueueName=queue_name)
@@ -186,7 +193,10 @@ def main():
             required_fields = ['action', 'number', 'repository']
 
             write_message(message.body)
-            successful = process_message(msg_body, required_fields, github_token, git_author=git_author)
+            successful = process_message(msg_body, required_fields,
+                                         github_token, git_author=git_author,
+                                         hook_exists=hook_exists,
+                                         hook_created=hook_created)
 
             queue.delete_messages(Entries=[{
                 'Id': message.message_id,
