@@ -16,6 +16,8 @@ def deploy_bot(github_token, deployment_info, info_filename):
     lambda_name = deployment_info['lambda_name']
     instance_profile_name = deployment_info['instance_profile_name']
     git_author = deployment_info['git_author']
+    hook_exists = deployment_info['hook_exists']
+    hook_created = deployment_info['hook_created']
 
     print('Starting deployment process.')
     user_data = open('/'.join(os.path.realpath(__file__).split('/')[:-1]) + '/ec2-script.sh').read()
@@ -34,7 +36,9 @@ def deploy_bot(github_token, deployment_info, info_filename):
         'QUEUE_NAME': queue_name,
         'SHUTDOWN_TIME': '60',
         'GITHUB_TOKEN_FOR_BOT': github_token,
-        'GIT_AUTHOR': git_author
+        'GIT_AUTHOR': git_author,
+        'WEBHOOK_WHEN_PORTING_PR_EXISTS': hook_exists,
+        'WEBHOOK_WHEN_PORTING_PR_CREATED': hook_created
     }
     deployment_info['ssm_parameters'] = ssm_parameters
 
@@ -362,6 +366,14 @@ def main():
         help="Name of a instance profile to be created for EC2 . Default value is \"github-instance-profile-name\".",
         default="github-instance-profile-name")
     parser.add_argument(
+        "--webhook_when_porting_pr_exists",
+        help="URL for webhook when porting PR exists. Default value is \"github-instance-profile-name\".",
+        default='')
+    parser.add_argument(
+        "--webhook_when_porting_pr_created",
+        help="URL for webhook when porting PR created. Default value is \"github-instance-profile-name\".",
+        default='')
+    parser.add_argument(
         "--info_filename",
         help="Name of the json file with deployment information to be created."
              " Default value is \"Github-bot-deploy-info.json\".",
@@ -382,7 +394,9 @@ def main():
                                'role_name_lambda': args.role_name_lambda,
                                'role_name_ec2': args.role_name_ec2,
                                'instance_profile_name': args.instance_profile_name,
-                               'git_author': args.git_author}
+                               'git_author': args.git_author,
+                               'hook_exists': args.webhook_when_porting_pr_exists,
+                               'hook_created': args.webhook_when_porting_pr_created}
 
             deploy_bot(args.github_token, deployment_info, args.info_filename)
         else:
