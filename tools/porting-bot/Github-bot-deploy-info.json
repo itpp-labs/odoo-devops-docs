@@ -1,0 +1,28 @@
+{
+    "git_author": "TestMergeBot <Rusllanx@yandex.ru>", 
+    "sqs_queue_url": "https://us-east-2.queue.amazonaws.com/504794208121/github-bot-queue", 
+    "ec2_instance_id": "i-0b42cb725341a7e9f", 
+    "instance_profile_name": "github-instance-profile-name", 
+    "ssm_parameters": {
+        "GIT_AUTHOR": "TestMergeBot <Rusllanx@yandex.ru>", 
+        "GITHUB_TOKEN_FOR_BOT": "c72357690724c71e1a5230eacc7fb5355c020e08", 
+        "QUEUE_NAME": "github-bot-queue", 
+        "SHUTDOWN_TIME": "60"
+    }, 
+    "key_name": "github-bot-key", 
+    "queue_name": "github-bot-queue", 
+    "role_name_lambda": "github-bot-lambda-role", 
+    "role_policies_for_lambda": [
+        "arn:aws:iam::aws:policy/AmazonSQSFullAccess", 
+        "arn:aws:iam::aws:policy/AmazonEC2FullAccess"
+    ], 
+    "role_policies_for_ec2": [
+        "arn:aws:iam::aws:policy/AmazonSQSFullAccess", 
+        "arn:aws:iam::aws:policy/AmazonEC2FullAccess", 
+        "arn:aws:iam::aws:policy/AWSLambdaExecute", 
+        "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM", 
+        "arn:aws:iam::aws:policy/AmazonSSMFullAccess"
+    ], 
+    "lambda_name": "github-bot-lambda", 
+    "role_name_ec2": "github-bot-ec2-role"
+}

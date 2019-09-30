@@ -1,4 +1,6 @@
 #!/usr/bin/python
+"""Script for forking github repo."""
+
 import argparse
 import os
 from github import Github
@@ -13,30 +15,43 @@ def main():
                         help="Token from github account. Token or login/passord not specified"
                              " will be taken from GITHUB_TOKEN_FOR_BOT environmental variable",
                         default=os.getenv("GITHUB_TOKEN_FOR_BOT"))
-    parser.add_argument("base_repo_name", help="Name of repository where PR will be made")
-    parser.add_argument("base_branch", help="Name of branch, in which merge will be made")
-    parser.add_argument("forked_user", help="Name of the user who own a fork where branch is located")
-    parser.add_argument("head_branch", help="Name of branch, from where merge will be made")
+    parser.add_argument("base_repo_name", help="Name of repository fork of witch will be made")
 
     args = parser.parse_args()
     github_login = args.github_login
     github_password = args.github_password
     github_token = args.github_token
     base_repo_name = args.base_repo_name
-    base_branch = args.base_branch
-    forked_user = args.forked_user
-    head_branch = args.head_branch
+
+    fork(github_login, github_password, github_token, base_repo_name)
+
+
+def fork(github_login, github_password, github_token, base_repo_name):
+    """
+    Forks specified repository. If fork exists, do nothing.
+
+    :param github_login:
+        Login from github account.
+    :param github_password:
+        Password from github account.
+    :param github_token:
+        Token from github account. If token or login/password not specified will be taken from
+        GITHUB_TOKEN_FOR_BOT environmental variable.
+    :param base_repo_name:
+        Name of repository where PR will be made.
+    """
 
     if github_login is not None and github_password is not None:
         github = Github(github_login, github_password)
     elif github_token is not None:
         github = Github(github_token)
     else:
-        print('Please specify github login/password or token')
+        print('Please specify github login/password or token.')
 
     repo = github.get_repo(base_repo_name)
 
-    repo.create_pull(title="Title", body="Body", base=base_branch, head=forked_user + ':' + head_branch)
+    github_user = github.get_user()
+    github_user.create_fork(repo)
 
 
 if __name__ == "__main__":

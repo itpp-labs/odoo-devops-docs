@@ -15,6 +15,9 @@ def deploy_bot(github_token, deployment_info, info_filename):
     role_name_lambda = deployment_info['role_name_lambda']
     lambda_name = deployment_info['lambda_name']
     instance_profile_name = deployment_info['instance_profile_name']
+    git_author = deployment_info['git_author']
+    hook_exists = deployment_info['hook_exists']
+    hook_created = deployment_info['hook_created']
 
     print('Starting deployment process.')
     user_data = open('/'.join(os.path.realpath(__file__).split('/')[:-1]) + '/ec2-script.sh').read()
@@ -32,7 +35,10 @@ def deploy_bot(github_token, deployment_info, info_filename):
     ssm_parameters = {
         'QUEUE_NAME': queue_name,
         'SHUTDOWN_TIME': '60',
-        'GITHUB_TOKEN_FOR_BOT': github_token
+        'GITHUB_TOKEN_FOR_BOT': github_token,
+        'GIT_AUTHOR': git_author,
+        'WEBHOOK_WHEN_PORTING_PR_EXISTS': hook_exists,
+        'WEBHOOK_WHEN_PORTING_PR_CREATED': hook_created
     }
     deployment_info['ssm_parameters'] = ssm_parameters
 
@@ -165,7 +171,7 @@ def create_ec2_instance(instance_profile_name, instance_profile_arn, key_name, u
             'Enabled': False
         },
         SecurityGroupIds=[
-            'sg-00f3b71d4b6021b03',
+            'sg-ad82ddc1',
         ]
     )
     time.sleep(30)
@@ -277,7 +283,7 @@ def create_instance_profile(profile_name, role_name):
     iam = boto3.resource('iam')
 
     response = iam_client.create_instance_profile(
-        InstanceProfileName=profile_name,
+            InstanceProfileName=profile_name,
         Path='/'
     )
 
@@ -331,6 +337,11 @@ def main():
              " will be taken from GITHUB_TOKEN_FOR_BOT environmental variable.",
         default=os.getenv("GITHUB_TOKEN_FOR_BOT"))
     parser.add_argument(
+        "--git_author",
+        help="Author info to use in commits. If not specified, it"
+             "will be taken from GIT_AUTHOR environmental variable.",
+        default=os.getenv("GIT_AUTHOR"))
+    parser.add_argument(
         "--key_name",
         help="Name of a key in ec2 key pair to be created. Default value is \"github-bot-key\".",
         default="github-bot-key")
@@ -355,6 +366,14 @@ def main():
         help="Name of a instance profile to be created for EC2 . Default value is \"github-instance-profile-name\".",
         default="github-instance-profile-name")
     parser.add_argument(
+        "--webhook_when_porting_pr_exists",
+        help="URL for webhook when porting PR exists. Default value is \"github-instance-profile-name\".",
+        default='')
+    parser.add_argument(
+        "--webhook_when_porting_pr_created",
+        help="URL for webhook when porting PR created. Default value is \"github-instance-profile-name\".",
+        default='')
+    parser.add_argument(
         "--info_filename",
         help="Name of the json file with deployment information to be created."
              " Default value is \"Github-bot-deploy-info.json\".",
@@ -374,7 +393,10 @@ def main():
                                'lambda_name': args.lambda_name,
                                'role_name_lambda': args.role_name_lambda,
                                'role_name_ec2': args.role_name_ec2,
-                               'instance_profile_name': args.instance_profile_name}
+                               'instance_profile_name': args.instance_profile_name,
+                               'git_author': args.git_author,
+                               'hook_exists': args.webhook_when_porting_pr_exists,
+                               'hook_created': args.webhook_when_porting_pr_created}
 
             deploy_bot(args.github_token, deployment_info, args.info_filename)
         else:

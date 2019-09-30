@@ -1,4 +1,4 @@
-# Github bot
+# Porting-bot bot
 
 This is bot for transferring changes between different Odoo versions and writing review. It based on Amazon Web Services (EC2, Lambda, SQS) and python scripts.
 
@@ -46,10 +46,9 @@ In order to deploy bot and set it up for your repository you will need to:
       
 * Run ec2-deploy.py script (you can use python3 instead):
 
-      $ python ./odoo-devops/tools/merge-bot/ec2/ec2-deploy.py
+      $ python ./odoo-devops/tools/porting-bot/ec2/ec2-deploy.py
       
 -------
-This part of instruction will be deleted when it will be automated and made part of ec2-deploy.py.
 
 * Go to [AWS Lambda page](https://console.aws.amazon.com/lambda/home) and click on github-bot-lambda;
 
@@ -80,4 +79,4 @@ More information can be obtained in scripts/README.md file, where scripts witch 
 
 If you want to remove bot from your AWS, simply run deploy script with argument "--remove_bot":
 
-      $ python ./odoo-devops/tools/merge-bot/ec2/ec2-deploy.py --remove_bot
+      $ python ./odoo-devops/tools/porting-bot/ec2/ec2-deploy.py --remove_bot
