@@ -58,3 +58,4 @@ Roadmap
 
 * TODO: Deleted files should be listed with tag ``[DELETED]``
 * TODO: Renamed files should be listed with tag ``[RENAMED from path/to/original-file]`` (for new files) and ``[RENAMED]`` (for original place of the file)
+* Updating review doesn't work: github API returns 404. See https://gitlab.com/itpp/odoo-devops/issues/3
