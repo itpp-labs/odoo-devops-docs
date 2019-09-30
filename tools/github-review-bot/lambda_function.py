@@ -161,7 +161,7 @@ def get_link_to_manifest(GITHUB_TOKEN, full_name_head_repo, branch_head_repo, pr
     http = urllib3.PoolManager()
     res = http.request('GET', url, headers={
         'Accept': 'application/vnd.github.v3.raw',
-        'User-Agent': 'aws lambda handler',
+        'User-Agent': 'https://gitlab.com/itpp/odoo-devops/blob/master/docs/git/github-review-bot.rst',
         'Authorization': 'token %s' % GITHUB_TOKEN})
     list_files = json.loads(res.data)
     logger.debug("list_files: \n%s", list_files)
@@ -188,7 +188,7 @@ def update_review(GITHUB_TOKEN, full_name, pull_number, id_review, review_body):
     body = {'body': review_body}
     res = http.request('PUT', url, headers={
         'Content-Type': 'application/vnd.github.v3.raw+json',
-        'User-Agent': 'aws lambda handler',
+        'User-Agent': 'https://gitlab.com/itpp/odoo-devops/blob/master/docs/git/github-review-bot.rst',
         'Authorization': 'token %s' % GITHUB_TOKEN,
     }, body=json.dumps(body))
     res = json.loads(res.data)
