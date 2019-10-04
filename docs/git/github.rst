@@ -38,6 +38,7 @@ Make a script ``make-prs.sh`` with following content
         access-addons
         mail-addons
         website-addons
+        sync-addons
 	)
     BRANCHES=(
         10.0
