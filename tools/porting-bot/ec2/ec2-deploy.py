@@ -45,7 +45,7 @@ def deploy_bot(github_token, deployment_info, info_filename):
     if hook_exists != '' and hook_created != '':
         ssm_parameters['WEBHOOK_WHEN_PORTING_PR_EXISTS'] = hook_exists
         ssm_parameters['WEBHOOK_WHEN_PORTING_PR_CREATED'] = hook_created
-        
+
     deployment_info['ssm_parameters'] = ssm_parameters
 
     sqs_response = create_sqs(queue_name)

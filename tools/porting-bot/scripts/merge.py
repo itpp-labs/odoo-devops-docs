@@ -3,7 +3,8 @@ import os
 from subprocess import Popen, PIPE, call
 import argparse
 
-VERSION_EMOJIS = {'8.0': ':eight:', '9.0': ':nine:', '10.0': ':one::zero:', '11.0': ':one::one:', '12.0': ':one::two:'}
+VERSION_EMOJIS = {'8.0': ':eight:', '9.0': ':nine:', '10.0': ':one::zero:',
+                  '11.0': ':one::one:', '12.0': ':one::two:', '13.0': ':one::three:'}
 
 
 def main():
