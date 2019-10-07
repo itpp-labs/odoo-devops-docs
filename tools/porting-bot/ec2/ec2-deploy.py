@@ -21,6 +21,10 @@ def deploy_bot(github_token, deployment_info, info_filename):
 
     print('Starting deployment process.')
     user_data = open('/'.join(os.path.realpath(__file__).split('/')[:-1]) + '/ec2-script.sh').read()
+
+    user_data += '\nsudo git config --global user.name {}'.format(git_author.split()[0])
+    user_data += '\nsudo git config --global user.email {}'.format(git_author.split()[0])
+
     role_policies_for_ec2 = ['arn:aws:iam::aws:policy/AmazonSQSFullAccess',
                              'arn:aws:iam::aws:policy/AmazonEC2FullAccess',
                              'arn:aws:iam::aws:policy/AWSLambdaExecute',
