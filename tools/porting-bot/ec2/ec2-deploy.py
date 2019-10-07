@@ -40,10 +40,12 @@ def deploy_bot(github_token, deployment_info, info_filename):
         'QUEUE_NAME': queue_name,
         'SHUTDOWN_TIME': '60',
         'GITHUB_TOKEN_FOR_BOT': github_token,
-        'GIT_AUTHOR': git_author,
-        'WEBHOOK_WHEN_PORTING_PR_EXISTS': hook_exists,
-        'WEBHOOK_WHEN_PORTING_PR_CREATED': hook_created
+        'GIT_AUTHOR': git_author
     }
+    if hook_exists != '' and hook_created != '':
+        ssm_parameters['WEBHOOK_WHEN_PORTING_PR_EXISTS'] = hook_exists
+        ssm_parameters['WEBHOOK_WHEN_PORTING_PR_CREATED'] = hook_created
+        
     deployment_info['ssm_parameters'] = ssm_parameters
 
     sqs_response = create_sqs(queue_name)
