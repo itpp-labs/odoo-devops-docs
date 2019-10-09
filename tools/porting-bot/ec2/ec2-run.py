@@ -130,12 +130,18 @@ def process_message(msg_body, required_fields, github_token, git_author=None,
 
                 write_in_log('making pull-request in {} {} from {} {}'.format(full_repo_name, next_branch,
                                                                               fork_user, merge_branch))
-                Popen(['python', '/home/ec2-user/odoo-devops/tools/porting-bot/scripts/pull-request.py',
+
+                pr_call_params = ['python', '/home/ec2-user/odoo-devops/tools/porting-bot/scripts/pull-request.py',
                        full_repo_name, next_branch, fork_user, merge_branch,
                        '--github_token', github_token,
-                       '--webhook_when_porting_pr_exists', hook_exists,
-                       '--webhook_when_porting_pr_created', hook_created,
-                       '--original_pr_title', msg_body['pull_request']['title']]).wait()
+                       '--original_pr_title', msg_body['pull_request']['title']]
+
+                if hook_exists is not None:
+                    pr_call_params.extend(['--webhook_when_porting_pr_exists', hook_exists])
+                if hook_created is not None:
+                    pr_call_params.extend(['--webhook_when_porting_pr_created', hook_created])
+
+                Popen(pr_call_params).wait()
 
                 write_in_log('pull-request complete'.format(next_branch))
 
@@ -173,6 +179,12 @@ def main():
     git_author = ssm_client.get_parameter(Name='GIT_AUTHOR', WithDecryption=True)['Parameter']['Value']
     hook_exists = ssm_client.get_parameter(Name='WEBHOOK_WHEN_PORTING_PR_EXISTS', WithDecryption=True)['Parameter']['Value']
     hook_created = ssm_client.get_parameter(Name='WEBHOOK_WHEN_PORTING_PR_CREATED', WithDecryption=True)['Parameter']['Value']
+
+    if hook_exists == 'none':
+        hook_exists = None
+
+    if hook_created == 'none':
+        hook_created = None
 
     sqs = boto3.resource('sqs', region_name=region_name)
     queue = sqs.get_queue_by_name(QueueName=queue_name)

@@ -36,15 +36,20 @@ def deploy_bot(github_token, deployment_info, info_filename):
                                 'arn:aws:iam::aws:policy/AmazonEC2FullAccess']
     deployment_info['role_policies_for_lambda'] = role_policies_for_lambda
 
+    if hook_exists == '':
+        hook_exists = 'none'
+
+    if hook_created == '':
+        hook_created = 'none'
+
     ssm_parameters = {
         'QUEUE_NAME': queue_name,
         'SHUTDOWN_TIME': '60',
         'GITHUB_TOKEN_FOR_BOT': github_token,
-        'GIT_AUTHOR': git_author
+        'GIT_AUTHOR': git_author,
+        'WEBHOOK_WHEN_PORTING_PR_EXISTS': hook_exists,
+        'WEBHOOK_WHEN_PORTING_PR_CREATED': hook_created
     }
-    if hook_exists != '' and hook_created != '':
-        ssm_parameters['WEBHOOK_WHEN_PORTING_PR_EXISTS'] = hook_exists
-        ssm_parameters['WEBHOOK_WHEN_PORTING_PR_CREATED'] = hook_created
 
     deployment_info['ssm_parameters'] = ssm_parameters
 
