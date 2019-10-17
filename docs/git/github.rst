@@ -56,6 +56,7 @@ Make a script ``make-prs.sh`` with following content
         fi
         cd $DIRECTORY_CLONE/$REPO
         for BRANCH in "${BRANCHES[@]}"; do
+            git fetch upstream $BRANCH
             git checkout -b $BRANCH-$BRANCH_SUFFIX upstream/$BRANCH
 
             # CHECK THAT UPDATES ARE NOT DONE YET
