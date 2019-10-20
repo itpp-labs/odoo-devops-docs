@@ -18,7 +18,7 @@ def main():
     parser.add_argument("forked_user", help="Name of the user who own a fork where branch is located")
     parser.add_argument("head_branch", help="Name of branch, from where PR will be made")
     parser.add_argument("original_pr_title", "name of initial title from which changes are taken. "
-                                             "This param needed for webhook")
+                                             "This param needed for webhook", default='')
     parser.add_argument(
         "--webhook_when_porting_pr_exists",
         help="URL for webhook when porting PR exists. Default value is \"github-instance-profile-name\".",
