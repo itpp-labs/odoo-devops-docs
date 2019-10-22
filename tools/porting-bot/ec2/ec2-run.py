@@ -141,6 +141,7 @@ def process_message(msg_body, required_fields, github_token, git_author=None,
                 if hook_created is not None:
                     pr_call_params.extend(['--webhook_when_porting_pr_created', hook_created])
 
+                write_in_log(' '.join(pr_call_params))
                 Popen(pr_call_params).wait()
 
                 write_in_log('pull-request complete'.format(next_branch))
