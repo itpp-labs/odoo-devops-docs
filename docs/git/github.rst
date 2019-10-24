@@ -25,7 +25,7 @@ Make a script ``make-prs.sh`` with following content
     USERNAME=yelizariev
 
     # WHERE TO CLONE
-    DIRECTORY_CLONE=./
+    DIRECTORY_CLONE=$(pwd)
 
     # DESCRIPTION OF THE UPDATES
     MSG=":shield: travis.yml notifications webhook travis"
