@@ -145,6 +145,7 @@ def process_message(msg_body, required_fields, github_token, git_author=None,
                 Popen(pr_call_params).wait()
 
                 write_in_log('pull-request complete'.format(next_branch))
+                successful = True
 
             else:
                 write_in_log('merge in branch "{}" is not supported'.format(next_branch))
@@ -152,7 +153,6 @@ def process_message(msg_body, required_fields, github_token, git_author=None,
         else:
             write_in_log('action is {}, pull request not merged'.format(action))
 
-        successful = True
 
     else:
         absent_fields = ''
@@ -205,11 +205,12 @@ def main():
             msg_body = json.loads(message.body)
             required_fields = ['action', 'number', 'repository']
 
-            write_message(message.body)
             successful = process_message(msg_body, required_fields,
                                          github_token, git_author=git_author,
                                          hook_exists=hook_exists,
                                          hook_created=hook_created)
+            if successful:
+                write_message(message.body)
 
             queue.delete_messages(Entries=[{
                 'Id': message.message_id,
