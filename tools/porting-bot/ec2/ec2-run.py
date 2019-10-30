@@ -62,8 +62,8 @@ def update_bot():
     Updates bot itself.
     """
 
-    call(['git', '-C', 'odoo-devops', 'fetch', '--all'])
-    call(['git', '-C', 'odoo-devops', 'reset', '--hard', 'origin'])
+    call(['sudo', 'git', '-C', 'odoo-devops', 'fetch', '--all'])
+    call(['sudo', 'git', '-C', 'odoo-devops', 'reset', '--hard', 'origin'])
 
 
 def process_message(msg_body, required_fields, github_token, git_author=None,
