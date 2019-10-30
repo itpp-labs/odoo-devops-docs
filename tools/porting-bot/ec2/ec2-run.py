@@ -23,6 +23,8 @@ def write_in_log(log_message):
     with open('/home/ec2-user/logs-github-bot/{}.txt'.format(now.strftime('%Y-%m-%d')), 'a') as logfile:
         logfile.write('{} {}\n'.format(now.strftime('%Y-%m-%d %H:%M:%S'), log_message))
 
+    print(log_message)
+
 
 def write_message(message):
     """
