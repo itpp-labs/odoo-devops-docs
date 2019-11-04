@@ -23,6 +23,8 @@ def write_in_log(log_message):
     with open('/home/ec2-user/logs-github-bot/{}.txt'.format(now.strftime('%Y-%m-%d')), 'a') as logfile:
         logfile.write('{} {}\n'.format(now.strftime('%Y-%m-%d %H:%M:%S'), log_message))
 
+    print(log_message)
+
 
 def write_message(message):
     """
@@ -62,8 +64,8 @@ def update_bot():
     Updates bot itself.
     """
 
-    call(['git', '-C', 'odoo-devops', 'fetch', '--all'])
-    call(['git', '-C', 'odoo-devops', 'reset', '--hard', 'origin'])
+    call(['sudo', 'git', '-C', 'odoo-devops', 'fetch', '--all'])
+    call(['sudo', 'git', '-C', 'odoo-devops', 'reset', '--hard', 'origin'])
 
 
 def process_message(msg_body, required_fields, github_token, git_author=None,
@@ -130,14 +132,22 @@ def process_message(msg_body, required_fields, github_token, git_author=None,
 
                 write_in_log('making pull-request in {} {} from {} {}'.format(full_repo_name, next_branch,
                                                                               fork_user, merge_branch))
-                Popen(['python', '/home/ec2-user/odoo-devops/tools/porting-bot/scripts/pull-request.py',
+
+                pr_call_params = ['python', '/home/ec2-user/odoo-devops/tools/porting-bot/scripts/pull-request.py',
                        full_repo_name, next_branch, fork_user, merge_branch,
                        '--github_token', github_token,
-                       '--webhook_when_porting_pr_exists', hook_exists,
-                       '--webhook_when_porting_pr_created', hook_created,
-                       '--original_pr_title', msg_body['pull_request']['title']]).wait()
+                       '--original_pr_title', msg_body['pull_request']['title']]
+
+                if hook_exists is not None:
+                    pr_call_params.extend(['--webhook_when_porting_pr_exists', hook_exists])
+                if hook_created is not None:
+                    pr_call_params.extend(['--webhook_when_porting_pr_created', hook_created])
+
+                write_in_log(' '.join(pr_call_params))
+                Popen(pr_call_params).wait()
 
                 write_in_log('pull-request complete'.format(next_branch))
+                successful = True
 
             else:
                 write_in_log('merge in branch "{}" is not supported'.format(next_branch))
@@ -145,7 +155,6 @@ def process_message(msg_body, required_fields, github_token, git_author=None,
         else:
             write_in_log('action is {}, pull request not merged'.format(action))
 
-        successful = True
 
     else:
         absent_fields = ''
@@ -174,6 +183,12 @@ def main():
     hook_exists = ssm_client.get_parameter(Name='WEBHOOK_WHEN_PORTING_PR_EXISTS', WithDecryption=True)['Parameter']['Value']
     hook_created = ssm_client.get_parameter(Name='WEBHOOK_WHEN_PORTING_PR_CREATED', WithDecryption=True)['Parameter']['Value']
 
+    if hook_exists == 'none':
+        hook_exists = None
+
+    if hook_created == 'none':
+        hook_created = None
+
     sqs = boto3.resource('sqs', region_name=region_name)
     queue = sqs.get_queue_by_name(QueueName=queue_name)
 
@@ -192,11 +207,12 @@ def main():
             msg_body = json.loads(message.body)
             required_fields = ['action', 'number', 'repository']
 
-            write_message(message.body)
             successful = process_message(msg_body, required_fields,
                                          github_token, git_author=git_author,
                                          hook_exists=hook_exists,
                                          hook_created=hook_created)
+            if successful:
+                write_message(message.body)
 
             queue.delete_messages(Entries=[{
                 'Id': message.message_id,

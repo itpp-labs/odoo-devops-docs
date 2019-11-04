@@ -21,6 +21,10 @@ def deploy_bot(github_token, deployment_info, info_filename):
 
     print('Starting deployment process.')
     user_data = open('/'.join(os.path.realpath(__file__).split('/')[:-1]) + '/ec2-script.sh').read()
+
+    user_data += '\nsudo git config --global user.name {}'.format(git_author.split()[0])
+    user_data += '\nsudo git config --global user.email {}'.format(git_author.split()[0])
+
     role_policies_for_ec2 = ['arn:aws:iam::aws:policy/AmazonSQSFullAccess',
                              'arn:aws:iam::aws:policy/AmazonEC2FullAccess',
                              'arn:aws:iam::aws:policy/AWSLambdaExecute',
@@ -32,6 +36,12 @@ def deploy_bot(github_token, deployment_info, info_filename):
                                 'arn:aws:iam::aws:policy/AmazonEC2FullAccess']
     deployment_info['role_policies_for_lambda'] = role_policies_for_lambda
 
+    if hook_exists == '':
+        hook_exists = 'none'
+
+    if hook_created == '':
+        hook_created = 'none'
+
     ssm_parameters = {
         'QUEUE_NAME': queue_name,
         'SHUTDOWN_TIME': '60',
@@ -40,6 +50,7 @@ def deploy_bot(github_token, deployment_info, info_filename):
         'WEBHOOK_WHEN_PORTING_PR_EXISTS': hook_exists,
         'WEBHOOK_WHEN_PORTING_PR_CREATED': hook_created
     }
+
     deployment_info['ssm_parameters'] = ssm_parameters
 
     sqs_response = create_sqs(queue_name)
