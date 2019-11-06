@@ -70,16 +70,16 @@ def pull_request(github_login, github_password, github_token, base_repo_name, ba
                          body="This is auto merge from {}:{} to {}".format(forked_user, head_branch, base_branch),
                          base=base_branch, head=forked_user + ':' + head_branch)
         write_in_log('pull created')
-        # if hook_created is not '':
-        #     call(['curl', '-X', 'POST', hook_exists, '-H',
-        #           '"Content-Type: application/json"', '-d',
-        #           '{"value1":"{}","value2":"{}","value3":"{}"}'.format(
-        #               original_pr_title, "Auto merge {}:{}-{}".format(forked_user, head_branch, base_branch), github_login)])
+        if hook_created is not '':
+            call(['curl', '-X', 'POST', hook_exists, '-H',
+                  '"Content-Type: application/json"', '-d',
+                  '{"value1":"{}","value2":"{}","value3":"{}"}'.format(
+                      original_pr_title, "Auto merge {}:{}-{}".format(forked_user, head_branch, base_branch), github_login)])
 
-    # elif hook_exists is not '':
-    #     call([  'curl', '-X', 'POST', hook_exists, '-H',
-    #           '"Content-Type: application/json"', '-d',
-    #           '{"value1":"{}","value2":"{}","value3":"{}"}'.format(original_pr_title, existing_pr_title, github_login)])
+    elif hook_exists is not '':
+        call(['curl', '-X', 'POST', hook_exists, '-H',
+              '"Content-Type: application/json"', '-d',
+              '{"value1":"{}","value2":"{}","value3":"{}"}'.format(original_pr_title, existing_pr_title, github_login)])
 
 
 def write_in_log(log_message):
