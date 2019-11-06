@@ -29,7 +29,7 @@ def write_in_log(log_message):
 def write_message(message):
     """
     Writes message from queue to logs.
-
+    
     :param message:
         Text of the message.
     """
@@ -136,7 +136,7 @@ def process_message(msg_body, required_fields, github_token, git_author=None,
                 pr_call_params = ['python', '/home/ec2-user/odoo-devops/tools/porting-bot/scripts/pull-request.py',
                        full_repo_name, next_branch, fork_user, merge_branch,
                        '--github_token', github_token,
-                       '--original_pr_title', msg_body['pull_request']['title']]
+                       '--original_pr_title', '"{}"'.format(msg_body['pull_request']['title'])]
 
                 if hook_exists is not None:
                     pr_call_params.extend(['--webhook_when_porting_pr_exists', hook_exists])
