@@ -18,7 +18,7 @@ def main():
     parser.add_argument("base_branch", help="Name of branch, in which PR will be made")
     parser.add_argument("forked_user", help="Name of the user who own a fork where branch is located")
     parser.add_argument("head_branch", help="Name of branch, from where PR will be made")
-    parser.add_argument("--original_pr_title", "name of initial title from which changes are taken. "
+    parser.add_argument("--original_pr_title", help="name of initial title from which changes are taken. "
                                              "This param needed for webhook", default='')
     parser.add_argument(
         "--webhook_when_porting_pr_exists",
