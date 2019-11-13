@@ -24,7 +24,8 @@ Create AWS Lambda function
 * Environment variables
 
   * ``GITHUB_TOKEN`` -- generate one in https://github.com/settings/tokens . No settings are needed for public repositories.
-  * ``IFTTT_HOOK_GREEN_PR``, ``IFTTT_HOOK_RED_PR``, ``IFTTT_HOOK_RED_BRANCH`` -- use IFTTT's hooks
+  * ``IFTTT_HOOK_GREEN_PR``, ``IFTTT_HOOK_RED_PR``, ``IFTTT_HOOK_RED_BRANCH`` -- use IFTTT's hooks.
+  * ``IGNORE_BRANCHES`` -- optional. List of branches separated by comma to ignore to notify. 
   * ``LOG_LEVEL`` -- optional. Set to ``DEBUG`` to get detailed logs in AWS CloudWatch.
 
 * Trigger

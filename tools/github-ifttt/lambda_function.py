@@ -11,6 +11,7 @@ GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
 IFTTT_HOOK_RED_PR = os.environ.get('IFTTT_HOOK_RED_PR')
 IFTTT_HOOK_RED_BRANCH = os.environ.get('IFTTT_HOOK_RED_BRANCH')
 IFTTT_HOOK_GREEN_PR = os.environ.get('IFTTT_HOOK_GREEN_PR')
+IGNORE_BRANCHES = os.environ.get('IGNORE_BRANCHES','').split(',')
 
 logger = logging.getLogger()
 if LOG_LEVEL:
@@ -37,6 +38,7 @@ def handle_payload(payload):
     # payload: https://developer.github.com/v3/activity/events/types/#webhook-payload-example
     # check_run: https://developer.github.com/v3/checks/runs/#parameters
     check_run = payload.get('check_run')
+    check_run_head_branch = check_run.get('check_suite').get('head_branch')
     if not check_run:
         return
 
@@ -53,7 +55,7 @@ def handle_payload(payload):
     # TODO make more strong check for travis
     if check_run['name'] == "Travis CI - Pull Request":
         return handle_payload_pr(payload, check_run, conclusion)
-    elif check_run['name'] == "Travis CI - Branch":
+    elif check_run['name'] == "Travis CI - Branch" and check_run_head_branch not in IGNORE_BRANCHES:
         return handle_payload_branch(payload, check_run, conclusion)
     else:
         logger.debug('Unknown check name: %s', check_run['name'])
