@@ -58,4 +58,6 @@ Roadmap
 
 * TODO: Deleted files should be listed with tag ``[DELETED]``
 * TODO: Renamed files should be listed with tag ``[RENAMED from path/to/original-file]`` (for new files) and ``[RENAMED]`` (for original place of the file)
+* TODO: New modules (e.g. root ``__init__.py`` didn't exist) should be marked with tag ``[NEW]``, e.g. ``├─ [NEW] pos_debt_notebook/``
+* TODO: Ported modules (``installable`` attribute is changed from False to True)  should be marked with tag ``[PORT]``, e.g. ``├─ [PORT] pos_debt_notebook/``
 * Updating review doesn't work without write access to the repo: github API returns 404. See https://gitlab.com/itpp/odoo-devops/issues/3
