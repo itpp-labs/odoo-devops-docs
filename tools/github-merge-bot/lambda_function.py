@@ -22,6 +22,12 @@ IFTTT_HOOK_GREEN_PR = os.environ.get('IFTTT_HOOK_GREEN_PR')
 IFTTT_HOOK_NOT_FINISHED_PR = os.environ.get('IFTTT_HOOK_NOT_FINISHED_PR')
 LINK_TO_READ_DOCS = '> sent by [:construction_worker_man: Merge Bot](https://odoo-devops.readthedocs.io/en/latest/git/github-merge-bot.html)'
 
+RESPONSE_200 = {
+    "statusCode": 200,
+    "headers": {},
+    "body": ""
+}
+
 logger = logging.getLogger()
 if LOG_LEVEL:
     logger.setLevel(getattr(logging, LOG_LEVEL))
@@ -33,7 +39,7 @@ def lambda_handler(event, context):
     logger.debug("Payload: \n%s", json.dumps(payload))
     comment = payload.get('comment')
     if not comment:
-        return
+        return RESPONSE_200
     comment = comment['body'].strip()
     if comment == MSG_RQST_MERGE:
         owner = payload.get('repository')['owner']['login']
@@ -48,7 +54,7 @@ def lambda_handler(event, context):
 
         if pull_request_state in ('closed', 'merged'):
             logger.debug('State of pull request: %s ', pull_request_state)
-            return
+            return RESPONSE_200
 
         username = payload.get('comment')['user']['login']
         headers = {
@@ -82,6 +88,7 @@ def lambda_handler(event, context):
             make_issue_comment(owner, repo, pull_number, headers, approve_comment)
     else:
         logger.debug('Comment: %s ', comment)
+    return RESPONSE_200
 
 
 def get_status_check_run(owner_base, repo_head, sha_head):
