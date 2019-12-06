@@ -13,6 +13,12 @@ LOG_LEVEL = os.environ.get('LOG_LEVEL')
 GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
 LINK_TO_READ_DOCS = '> sent by [:v: Odoo Review Bot](https://odoo-devops.readthedocs.io/en/latest/git/github-review-bot.html)'
 
+RESPONSE_200 = {
+    "statusCode": 200,
+    "headers": {},
+    "body": ""
+}
+
 logger = logging.getLogger()
 if LOG_LEVEL:
     logger.setLevel(getattr(logging, LOG_LEVEL))
@@ -30,6 +36,7 @@ def lambda_handler(event, context):
     state_pr = payload.get('pull_request')['state']
     if state_pr != 'closed':
         main(GITHUB_TOKEN, full_name, pull_number, full_name_head_repo, branch_head_repo)
+    return RESPONSE_200
 
 
 def main(GITHUB_TOKEN, full_name, pull_number, full_name_head_repo, branch_head_repo):
