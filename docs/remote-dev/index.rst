@@ -17,6 +17,7 @@ Usage
 
    ssh-forwarding
    run-local-files-remotely
+   edit-remote-files-locally
    x2go
 
 Containers administration
