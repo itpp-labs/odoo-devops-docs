@@ -15,7 +15,7 @@ On your local machine:
     # Step 2. Configure ssh keys on you local machine
     cat cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys 
     # Step 3. Connect to your server
-    ssh USERNAME@SERVER -p 22 -A -R 10000:localhost:22
+    ssh USERNAME@SERVER -p 22 -A -R 2222:localhost:22
 
 
 On your remote server:
@@ -23,7 +23,7 @@ On your remote server:
 .. code-block:: sh
 
     # Step 4. Mount your directory on remote server
-    sshfs -p 10000 -o idmap=user,nonempty \
+    sshfs -p 2222 -o idmap=user,nonempty \
                  LOCALUSERNAME@127.0.0.1:/PATH/TO/LOCAL/FOLDER /PATH/TO/REMOTE/FOLDER
 
 References
