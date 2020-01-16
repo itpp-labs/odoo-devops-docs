@@ -23,8 +23,12 @@ On your remote server:
 .. code-block:: sh
 
     # Step 4. Mount your directory on remote server
-    sshfs -p 2222 -o idmap=user,nonempty \
+    # about allow_other check this: https://github.com/moby/moby/issues/27026#issuecomment-253579983 
+    sshfs -p 2222 -o idmap=user,nonempty,allow_other \
                  LOCALUSERNAME@127.0.0.1:/PATH/TO/LOCAL/FOLDER /PATH/TO/REMOTE/FOLDER
+
+    # to unmount:
+    fusermount -u /PATH/TO/REMOTE/FOLDER
 
 References
 ==========
