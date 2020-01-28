@@ -20,8 +20,8 @@
 # -- Project information -----------------------------------------------------
 
 project = u'Odoo DevOps'
-copyright = u'2018-2019, IT-Projects LLC'
-author = u'IT-Projects LLC'
+copyright = u'2020, IT-Projects Labs; 2018-2019, IT-Projects LLC'
+author = u'IT-Projects Labs'
 
 # The short X.Y version
 version = u''
