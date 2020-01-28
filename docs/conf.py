@@ -71,14 +71,19 @@ pygments_style = 'sphinx'
 
 # -- Options for HTML output -------------------------------------------------
 
-# The theme to use for HTML and HTML Help pages.  See the documentation for
-# a list of builtin themes.
+html_theme = 'alabaster'
+
+# Theme options are theme-specific and customize the look and feel of a theme
+# further.  For a list of options available for each theme, see the
+# documentation.
 #
-import sphinx_rtd_theme
+html_theme_options = {
+    'github_banner': True,
+    'show_powered_by': False,
+    'github_user': 'itpp-labs',
+    'github_repo': 'chatops-docs',
+}
 
-html_theme = "sphinx_rtd_theme"
-
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 html_show_sphinx = False
 
 # Theme options are theme-specific and customize the look and feel of a theme
