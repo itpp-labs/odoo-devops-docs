@@ -81,7 +81,7 @@ html_theme_options = {
     'github_banner': True,
     'show_powered_by': False,
     'github_user': 'itpp-labs',
-    'github_repo': 'chatops-docs',
+    'github_repo': 'odoo-devops-docs',
 }
 
 html_show_sphinx = False
