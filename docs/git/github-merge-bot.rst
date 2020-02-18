@@ -41,7 +41,7 @@ Create AWS Lambda function
 
 * Function Code
 
-  * Copy-paste this code: https://gitlab.com/itpp/odoo-devops/raw/master/tools/github-merge-bot/lambda_function.py
+  * Copy-paste this code: https://raw.githubusercontent.com/itpp-labs/odoo-devops-docs/master/tools/github-merge-bot/lambda_function.py
 
 * Basic settings
 
