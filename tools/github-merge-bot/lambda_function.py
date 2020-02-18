@@ -20,7 +20,7 @@ MSG_RQST_MERGE = os.environ.get('MSG_RQST_MERGE', 'I approve to merge it now')
 IFTTT_HOOK_RED_PR = os.environ.get('IFTTT_HOOK_RED_PR')
 IFTTT_HOOK_GREEN_PR = os.environ.get('IFTTT_HOOK_GREEN_PR')
 IFTTT_HOOK_NOT_FINISHED_PR = os.environ.get('IFTTT_HOOK_NOT_FINISHED_PR')
-LINK_TO_READ_DOCS = '> sent by [:construction_worker_man: Merge Bot](https://odoo-devops.readthedocs.io/en/latest/git/github-merge-bot.html)'
+LINK_TO_READ_DOCS = '> sent by [:construction_worker_man: Merge Bot](https://itpp.dev/ops/git/github-merge-bot.html)'
 
 RESPONSE_200 = {
     "statusCode": 200,
