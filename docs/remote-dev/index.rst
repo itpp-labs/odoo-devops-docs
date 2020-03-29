@@ -26,3 +26,4 @@ Containers administration
 .. toctree::
 
    lxd/lxd
+   aws/index
