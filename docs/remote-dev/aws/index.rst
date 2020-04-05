@@ -23,10 +23,10 @@ Control commands
   * Hostname
   * Time to automatic shutdown
   * Text: *To shutdown earlier send /shutdown or
-    schedule message "shutdown"
+    schedule message "Shutdown"
 
 * /shutdown -- turn the server off after confirmation
-* shutdown -- turn the server off without confirmation
+* Shutdown -- turn the server off without confirmation
 
 
 Settings
@@ -34,13 +34,14 @@ Settings
 
 On creating AWS Lambda, you would need to set following Environment variables:
 
+* TELEGRAM_TOKEN=<telegram token you got from Bot Father>
 * DOMAIN="USERCODE.example.com"
 * DOMAIN_NO_SSL="USERCODE.nossl.example.com"
 * USER_123_SERVER=*<Server-ARN>*, USER_123_CODE=*some-user-code*
 
   * 123 is a telegram user ID. You can get one via `Get My ID bot <https://telegram.me/itpp_myid_bot>`__
 * AUTO_SHUTDOWN=*<time in minutes before server will be shutdown>*
-* LOG_LEVEL=*<LEVEL>* -- ``DEBUG``, ``INFO``, etc.
+* LOG_LEVEL=<LEVEL> -- ``DEBUG``, ``INFO``, etc.
 
 Bot source
 ==========
