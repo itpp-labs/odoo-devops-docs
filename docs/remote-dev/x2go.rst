@@ -69,4 +69,10 @@ X2GO Client
  Input / Output: Use Whole Display
  Username: noroot
 
+Firefox usage
+=============
 
+You may need to disable ``xrender`` settings in ``about:config`` and `Disable hardware acceleration in Firefox <https://support.mozilla.org/en-US/kb/hardware-acceleration-and-windowblinds-crash>`__. For more information see:
+
+* https://lists.x2go.org/pipermail/x2go-user/2016-August/003914.html
+* https://bugzilla.mozilla.org/show_bug.cgi?id=1263222
