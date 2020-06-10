@@ -16,6 +16,7 @@ Usage
    :maxdepth: 1
 
    ssh-forwarding
+   gpg-forwarding
    run-local-files-remotely
    edit-remote-files-locally
    x2go
