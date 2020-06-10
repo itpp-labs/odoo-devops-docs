@@ -31,4 +31,6 @@ To sign your commit on remote server you can forward gpg agent via ssh.
        RemoteForward <socket_on_remote_box>  <extra_socket_on_local_box>
  
  
-Reference: https://wiki.gnupg.org/AgentForwarding
+References: 
+* https://wiki.gnupg.org/AgentForwarding
+* https://superuser.com/questions/161973/how-can-i-forward-a-gpg-key-via-ssh-agent
