@@ -50,6 +50,7 @@ On creating AWS Lambda, you would need to set following Environment variables:
   * 123 is a telegram user ID. You can get one via `Get My ID bot <https://telegram.me/itpp_myid_bot>`__
   * *Instance ID* looks like ``i-07e6...`` and can be found in Description tab of existing Instance
 * AUTO_SHUTDOWN=*<time in minutes before instance will be shutdown>*
+* AUTO_SHUTDOWN_WARNING=*<time in minutes for warning before actual shutdown>*
 * LOG_LEVEL=<LEVEL> -- ``DEBUG``, ``INFO``, etc.
 
 Bot source
