@@ -25,6 +25,7 @@ Control commands
 * /up -- turn on instance or extend time to shutdown
 
   In response it sends:
+
   * IP
   * Hostname
   * Time to automatic shutdown
