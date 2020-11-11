@@ -33,7 +33,6 @@ Make a script ``make-prs.sh`` with following content
 
     REPOS=(
         misc-addons
-        saas-addons
         pos-addons
         access-addons
         mail-addons
