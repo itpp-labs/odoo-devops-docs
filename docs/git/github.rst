@@ -68,7 +68,7 @@ Make a script ``make-prs.sh`` with following content
             fi
             git commit -a -m "$MSG"
             git push origin $BRANCH-$BRANCH_SUFFIX
-            hub pull-request -b it-projects-llc:$BRANCH -m "$MSG"
+            hub pull-request -b $ORG:$BRANCH -m "$MSG"
         done
     done
 
