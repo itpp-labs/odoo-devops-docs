@@ -18,7 +18,7 @@ Make a script ``make-prs.sh`` with following content
     #!/bin/bash
 
     # ORGANIZATION GITHUB URL
-    ORG=it-projects-llc
+    ORG=itpp-labs
     UPSTREAM_URL_GIT=https://github.com/$ORG
 
     # DEVELOPER INFO
